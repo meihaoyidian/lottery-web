@@ -252,59 +252,28 @@ async def get_current_user_optional(
         logger.info("游客模式：允许匿名访问")
         return None
 
-    # 有认证凭据，进行正常认证流程
+    # 有认证凭据，进行正常认证流程；失败则返回 None（不强制要求登录）
     token = credentials.credentials
-    logger.info(f"收到token: {token[:30]}...")
 
-    # 解码token
     payload = decode_access_token(token)
     if payload is None:
-        logger.error("Token解码失败")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="无效的认证凭据",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        return None
 
-    # 获取用户ID
-    user_id_str: str = payload.get("sub")
+    user_id_str = payload.get("sub")
     if user_id_str is None:
-        logger.error("Token中没有用户ID")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="无效的认证凭据",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        return None
 
     try:
         user_id = int(user_id_str)
     except (ValueError, TypeError):
-        logger.error(f"用户ID格式错误: {user_id_str}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="无效的认证凭据",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        return None
 
-    # 查询用户
     user = db.query(User).filter(User.id == user_id).first()
     if user is None:
-        logger.error(f"用户不存在: {user_id}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="用户不存在",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        return None
 
-    # 验证 token_version
     token_version = payload.get("ver")
     if token_version is None or token_version != user.token_version:
-        logger.error(f"Token 版本不匹配: token_ver={token_version}, user_ver={user.token_version}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="登录已过期，请重新登录",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        return None
 
-    logger.info(f"用户验证成功: {user.nickname}")
     return user
