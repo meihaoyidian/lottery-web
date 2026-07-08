@@ -1,0 +1,65 @@
+/* ===== CSS Variables ===== */
+:root {
+  --bg: #F3F4F8;
+  --surface: #FFFFFF;
+  --border: #E8ECF2;
+  --primary: #2563EB;
+  --primary-light: #EFF6FF;
+  --text: #0F172A;
+  --muted: #64748B;
+  --green: #059669;
+  --gold: #F59E0B;
+  --radius: 16rpx;
+}
+
+/* ===== Reset ===== */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+/* ===== 1rem = 100rpx 的适配 (设计稿 750) ===== */
+/* ===== Utilities ===== */
+.page {
+  min-height: 100vh;
+  background: var(--bg);
+}
+
+.container {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background: var(--bg);
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  outline: none;
+  font-family: inherit;
+}
+
+input {
+  outline: none;
+  font-family: inherit;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
