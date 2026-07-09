@@ -26,6 +26,9 @@
 ### 一、后端更新（改了 backend/ 代码）
 
 ```bash
+ssh root@62.234.160.215
+Love112728!chen
+
 cd /root/codes/lottery-web
 git pull                        # 拉最新代码（github 慢就用镜像：git pull https://ghfast.top/https://github.com/meihaoyidian/lottery-web.git master）
 systemctl restart lottery-web   # 重启后端

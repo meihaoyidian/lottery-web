@@ -47,7 +47,7 @@
               <svg class="ach-badge-icon" viewBox="0 0 16 16" fill="none">
                 <path d="M3 13L13 3M13 3H5.5M13 3v7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
-              <span>昨日成绩</span>
+              <span>昨日战绩</span>
             </div>
           </div>
 
@@ -626,11 +626,13 @@ onUnmounted(() => {
 /* ---- 响应式 ---- */
 @media (max-width: 767px) {
   .ach-inner { padding: 18px 16px 12px; }
-  .ach-title { font-size: 18px; }
-  .ach-subtitle { font-size: 14px; }
-  .ach-badge { padding: 5px 12px; font-size: 11px; }
-  .ach-highlight-tag { font-size: 13px; padding: 5px 12px; }
-  .ach-highlight-icon { font-size: 15px; }
+  .ach-title { font-size: 19px; }
+  .ach-subtitle { font-size: 15px; }
+  .ach-label-text { font-size: 14px; }
+  .ach-badge { padding: 5px 12px; font-size: 12px; }
+  .ach-highlight-tag { font-size: 14px; padding: 5px 12px; }
+  .ach-highlight-icon { font-size: 16px; }
+  .ach-desc { font-size: 15px; }
   .ach-orb--primary { width: 140px; height: 140px; top: -50px; left: -40px; }
   .ach-orb--secondary { width: 120px; height: 120px; bottom: -40px; right: -30px; }
 }
