@@ -2,6 +2,36 @@
 
 > lottery-wxapp（微信小程序）→ lottery-web（浏览器端），后端逻辑和数据库复用。
 
+## 2026-07-10（移动端输入修复 + 全局字号提升 + 已确认角标修复）
+
+### 移动端输入框无法弹出键盘
+
+- `index.html`：去掉 viewport 中的 `maximum-scale=1.0, user-scalable=no`，这两个属性阻止了 iOS Safari 聚焦输入框时的自动缩放行为
+- `global.css`：去掉 `html` 上的 `-webkit-touch-callout: none`，过激的全局设置影响了移动端输入交互
+
+### 全局字号系统性上调
+
+**问题**：手机端整体字体偏小、看不清。之前已做过一轮调整（body 17px），用户反馈仍不够。
+
+**方案**：所有字号整体上移 1-2px，确立最小字号底线 11px，正文不低于 14px，标题不低于 17px。
+
+| 文件 | 调整范围 |
+|---|---|
+| `global.css` | body 18px（移）、input/select/textarea 17px |
+| `Login.vue` | 标语 14、tab 15、标签 13、输入框 16、错误提示 14 |
+| `RecommendationCard.vue` | 标题 17、队名 17(桌)/16(移)、标签类 11、预测 14、摘要 14、组合 15 |
+| `Recommendations.vue` | 状态 15、热度条 14、筛选 16(移)、战绩标题 21(桌)/18(移)、描述 14、空状态 18 |
+| `History.vue` | Hero 数字 26→34、仪表盘 34、统计卡 28、趋势 24、全部标签/正文 +1~2px |
+| `Profile.vue` | 昵称 19、按钮 16、输入 16、标签/正文全面 +1~2px |
+| `App.vue` | 底部标签图标 24px、标签文字 11px |
+
+### 场次卡片「方案已确认」角标修复
+
+- `.mc-confirmed-badge` 的 CSS 样式完全丢失，导致 DOM 中存在但不可见
+- 对照小程序原版 `recommendation-card.wxss` 恢复：teal 渐变 `#0d9488→#0f766e`、左上角折叠角标 `border-radius:0 0 8px 0`、无阴影无虚线、`padding-top` 给角标留空间
+
+---
+
 ## 2026-07-10（代码清理 + UI 优化）
 
 ### 清理游客/审核模式残留

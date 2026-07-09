@@ -252,6 +252,10 @@ async function loadAchievement() {
       if (!Array.isArray(achievement.highlights)) {
         achievement.highlights = []
       }
+      // trim 尾部换行，避免 white-space:pre-line 渲染多余空白行
+      if (achievement.description) {
+        achievement.description = achievement.description.replace(/\n+$/, '')
+      }
       latestAchievement.value = achievement
     }
   } catch { /* ignore */ }
@@ -362,13 +366,13 @@ onUnmounted(() => {
 }
 
 .status-text {
-  flex: 1; min-width: 0; font-size: 14px; font-weight: 600; color: var(--text-secondary);
+  flex: 1; min-width: 0; font-size: 15px; font-weight: 600; color: var(--text-secondary);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 /* 桌面显示完整文案，移动端显示精简文案 */
 .status-text-short { display: none; }
 .status-tag {
-  padding: 4px 14px; border-radius: 20px; font-size: 12px; font-weight: 700;
+  padding: 4px 14px; border-radius: 20px; font-size: 13px; font-weight: 700;
   flex-shrink: 0;
 }
 .status-tag.st-pending { background: #FEF3C7; color: #92400E; }
@@ -382,9 +386,9 @@ onUnmounted(() => {
   display: flex; align-items: center; justify-content: center; gap: 6px;
   padding: 10px 16px; margin-bottom: 12px;
   background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--radius); font-size: 13px;
+  border-radius: var(--radius); font-size: 14px;
 }
-.heat-live { display: inline-flex; align-items: center; gap: 6px; margin-right: 8px; font-weight: 600; color: #059669; font-size: 12px; }
+.heat-live { display: inline-flex; align-items: center; gap: 6px; margin-right: 8px; font-weight: 600; color: #059669; font-size: 13px; }
 .heat-pulse {
   display: inline-block; width: 8px; height: 8px; border-radius: 50%;
   background: #10B981; animation: heat-pulse 2s ease-in-out infinite;
@@ -464,7 +468,7 @@ onUnmounted(() => {
 .ach-inner {
   position: relative;
   z-index: 1;
-  padding: 22px 24px;
+  padding: 22px 24px 16px;
 }
 
 /* ---- 头部 ---- */
@@ -491,7 +495,7 @@ onUnmounted(() => {
   50%      { box-shadow: 0 0 12px rgba(99,102,241,0.4); }
 }
 .ach-label-text {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--muted);
   letter-spacing: 0.05em;
@@ -505,7 +509,7 @@ onUnmounted(() => {
   gap: 5px;
   padding: 6px 14px;
   border-radius: 20px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.04em;
   color: #fff;
@@ -523,7 +527,7 @@ onUnmounted(() => {
   min-width: 0;
 }
 .ach-title {
-  font-size: 20px;
+  font-size: 21px;
   font-weight: 800;
   color: var(--text);
   line-height: 1.3;
@@ -531,7 +535,7 @@ onUnmounted(() => {
 }
 .ach-subtitle {
   margin-top: 6px;
-  font-size: 14px;
+  font-size: 15px;
   color: var(--text-secondary);
   line-height: 1.5;
 }
@@ -551,7 +555,7 @@ onUnmounted(() => {
   gap: 6px;
   padding: 7px 15px;
   border-radius: 20px;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--primary-hover);
   background: var(--primary-light);
@@ -572,15 +576,15 @@ onUnmounted(() => {
 
 /* ---- 描述 ---- */
 .ach-footer {
-  margin-top: 16px;
-  padding-top: 16px;
+  margin-top: 12px;
+  padding-top: 12px;
   border-top: 1px solid var(--border-light);
 }
 .ach-desc {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text-secondary);
   line-height: 1.8;
-  white-space: pre-line;  /* 保留管理员输入的换行，与编辑页预览一致 */
+  white-space: pre-line;
 }
 
 /* ---- 管理员暗示 ---- */
@@ -592,7 +596,7 @@ onUnmounted(() => {
   margin-top: 14px;
   padding-top: 12px;
   border-top: 1px dashed var(--border);
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted);
   opacity: 0;
   transform: translateY(4px);
@@ -621,12 +625,12 @@ onUnmounted(() => {
 
 /* ---- 响应式 ---- */
 @media (max-width: 767px) {
-  .ach-inner { padding: 18px 16px; }
-  .ach-title { font-size: 17px; }
-  .ach-subtitle { font-size: 13px; }
-  .ach-badge { padding: 5px 12px; font-size: 10px; }
-  .ach-highlight-tag { font-size: 12px; padding: 5px 12px; }
-  .ach-highlight-icon { font-size: 14px; }
+  .ach-inner { padding: 18px 16px 12px; }
+  .ach-title { font-size: 18px; }
+  .ach-subtitle { font-size: 14px; }
+  .ach-badge { padding: 5px 12px; font-size: 11px; }
+  .ach-highlight-tag { font-size: 13px; padding: 5px 12px; }
+  .ach-highlight-icon { font-size: 15px; }
   .ach-orb--primary { width: 140px; height: 140px; top: -50px; left: -40px; }
   .ach-orb--secondary { width: 120px; height: 120px; bottom: -40px; right: -30px; }
 }
@@ -640,7 +644,7 @@ onUnmounted(() => {
 .filter-btn {
   padding: 10px 24px; border-radius: 24px;
   background: var(--surface); border: 1px solid var(--border);
-  font-size: 14px; font-weight: 500; color: var(--muted);
+  font-size: 15px; font-weight: 500; color: var(--muted);
   transition: all 0.2s;
 }
 .filter-btn.on {
@@ -655,8 +659,8 @@ onUnmounted(() => {
   text-align: center; padding: 80px 20px;
 }
 .empty-icon { font-size: 40px; display: block; margin-bottom: 16px; }
-.empty-title { font-size: 16px; font-weight: 600; color: var(--text-secondary); }
-.empty-desc { font-size: 14px; color: var(--muted); margin-top: 8px; display: block; }
+.empty-title { font-size: 17px; font-weight: 600; color: var(--text-secondary); }
+.empty-desc { font-size: 15px; color: var(--muted); margin-top: 8px; display: block; }
 
 /* ===========================
    列表
@@ -664,20 +668,20 @@ onUnmounted(() => {
 .rec-list { padding-bottom: 40px; }
 .load-more {
   text-align: center; padding: 32px 0; cursor: pointer;
-  font-size: 15px; font-weight: 600; color: var(--primary);
+  font-size: 16px; font-weight: 600; color: var(--primary);
   transition: color 0.15s;
 }
 .load-more:hover { color: var(--primary-hover); }
 
 @media (max-width: 767px) {
   .status-bar { padding: 12px 14px; gap: 10px; }
-  .status-text { font-size: 14px; }
+  .status-text { font-size: 15px; }
   .status-text-full { display: none; }
   .status-text-short { display: inline; }
-  .status-tag { padding: 5px 12px; font-size: 12px; }
-  .filter-btn { padding: 10px 22px; font-size: 15px; min-height:40px; }
-  .empty-title { font-size: 17px; }
-  .empty-desc { font-size: 15px; }
+  .status-tag { padding: 5px 12px; font-size: 13px; }
+  .filter-btn { padding: 10px 22px; font-size: 16px; min-height:40px; }
+  .empty-title { font-size: 18px; }
+  .empty-desc { font-size: 16px; }
 }
 
 </style>

@@ -164,8 +164,8 @@ main.no-nav { /* 登录/admin 全屏 */ }
 
 .tab-item.active { color: var(--primary); }
 
-.tab-icon { width: 22px; height: 22px; }
-.tab-label { font-size: 10px; font-weight: 500; letter-spacing: 0.03em; }
+.tab-icon { width: 24px; height: 24px; }
+.tab-label { font-size: 11px; font-weight: 500; letter-spacing: 0.03em; }
 
 main.has-bottom-tab {
   padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));

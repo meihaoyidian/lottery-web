@@ -275,7 +275,7 @@ async function handleSubmit() {
 }
 
 .login-slogan {
-  font-size: 13px;
+  font-size: 14px;
   color: #94A3B8;
   letter-spacing: 0.04em;
 }
@@ -291,9 +291,9 @@ async function handleSubmit() {
 
 .tab-btn {
   flex: 1;
-  height: 38px;
+  height: 40px;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   color: #94A3B8;
   background: transparent;
@@ -321,7 +321,7 @@ async function handleSubmit() {
 }
 
 .field-label {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   color: #64748B;
   letter-spacing: 0.05em;
@@ -330,12 +330,12 @@ async function handleSubmit() {
 
 .login-input {
   width: 100%;
-  height: 48px;
+  height: 50px;
   padding: 0 16px;
   background: #F8FAFC;
   border: 1px solid #E2E8F0;
   border-radius: 10px;
-  font-size: 15px;
+  font-size: 16px;
   color: #0F172A;
   letter-spacing: 0.02em;
   transition: all 0.2s ease;
@@ -396,7 +396,7 @@ async function handleSubmit() {
 
 /* ===== 提示 & 错误 ===== */
 .login-error {
-  font-size: 13px;
+  font-size: 14px;
   color: #EF4444;
   text-align: center;
   padding: 8px 14px;
@@ -406,7 +406,7 @@ async function handleSubmit() {
 }
 
 .login-hint {
-  font-size: 12px;
+  font-size: 13px;
   color: #94A3B8;
   text-align: center;
   line-height: 1.6;

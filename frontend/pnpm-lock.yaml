@@ -14,6 +14,9 @@ importers:
       pinia:
         specifier: ^3.0.4
         version: 3.0.4(vue@3.5.39)
+      pnpm:
+        specifier: ^11.10.0
+        version: 11.10.0
       vue:
         specifier: ^3.5.39
         version: 3.5.39
@@ -472,6 +475,11 @@ packages:
     peerDependenciesMeta:
       typescript:
         optional: true
+
+  pnpm@11.10.0:
+    resolution: {integrity: sha512-C3+LmAYAMZBMAX46QesYehbUDuuCm5XE+MsDaBdh/Eq1PdIZEVubRH9NzhoFohR2RGHn03AzkqnzL5URzoyGyA==}
+    engines: {node: '>=22.13'}
+    hasBin: true
 
   postcss@8.5.16:
     resolution: {integrity: sha512-vuwillviilfKZsg0VGj5R/YwwcHx4SLsIOI/7K6mQkWx+l5cUHTjj5g0AasTBcyXsbfTgrwsUNmVUb5xVwyPwg==}
@@ -947,6 +955,8 @@ snapshots:
     dependencies:
       '@vue/devtools-api': 7.7.10
       vue: 3.5.39
+
+  pnpm@11.10.0: {}
 
   postcss@8.5.16:
     dependencies:
