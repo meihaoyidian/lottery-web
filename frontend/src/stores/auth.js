@@ -36,7 +36,6 @@ export const useAuthStore = defineStore('auth', () => {
         ...user.value,
         ...res,
         isPaid: res.is_paid,
-        isTrial: res.is_trial,
         role: res.role
       }
       localStorage.setItem('user', JSON.stringify(user.value))
@@ -46,8 +45,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const isPaidUser = () => user.value?.isPaid || user.value?.role === 'admin'
-  const isTrial = () => user.value?.isTrial && !user.value?.isPaid
   const isAdmin = () => user.value?.role === 'admin'
 
-  return { token, user, setAuth, restore, logout, fetchUser, isPaidUser, isTrial, isAdmin }
+  return { token, user, setAuth, restore, logout, fetchUser, isPaidUser, isAdmin }
 })

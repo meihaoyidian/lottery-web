@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     # JWT 配置
     JWT_SECRET_KEY: str = "your-secret-key-here-change-in-production"
     JWT_ALGORITHM: str = "HS256"
-    JWT_EXPIRE_DAYS: int = 7
+    JWT_EXPIRE_DAYS: int = 30
 
     # API 配置
     API_V1_PREFIX: str = "/api/v1"
@@ -46,7 +46,6 @@ class Settings(BaseSettings):
     # 微信小程序配置
     WECHAT_APPID: str = ""
     WECHAT_SECRET: str = ""
-    WECHAT_SUBSCRIPTION_TEMPLATE_ID: str = "XLdeMlkBR9tscL1yI1MDRgnPFK-gziH_rwL4F4IW68Y"
 
     # 小程序URL配置（用于分享卡片二维码）
     MINIAPP_URL: str = "pages/entry/entry"

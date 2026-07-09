@@ -22,7 +22,16 @@ http.interceptors.response.use(
   res => res,
   error => {
     const status = error.response?.status
-    const msg = error.response?.data?.detail || error.response?.data?.message || '请求失败'
+    const detail = error.response?.data?.detail
+
+    // 解析错误消息：兼容 FastAPI 422 校验错误（detail 是数组）
+    let msg
+    if (Array.isArray(detail)) {
+      // 取第一条校验错误的可读信息
+      msg = detail[0]?.msg?.replace(/^Value error,\s*/, '') || '输入格式不正确'
+    } else {
+      msg = detail || error.response?.data?.message || '请求失败'
+    }
 
     // 401 且非登录接口 → 清登录态
     if (status === 401 && !error.config.url.includes('/auth/')) {

@@ -10,7 +10,27 @@
           </div>
           <div v-if="monthlyStats.length>0" class="hero-trend"><div class="trend-head"><span class="trend-title">历史好评率趋势</span><span class="trend-badge">持续稳定</span></div><div class="trend-scroll"><div v-for="m in monthlyStats" :key="m.month" class="trend-card"><span class="tc-month">{{ Number(m.month.split('-')[1]) }}月</span><span class="tc-rate">{{ ceil(m.hit_rate) }}%</span><div class="tc-bar-track"><div class="tc-bar" :style="{width:ceil(m.hit_rate)+'%'}"></div></div><span class="tc-count">{{ m.hit_count }}/{{ m.total_count }} 场</span></div></div></div>
         </div>
-        <div v-if="highlights.length>0" class="section-card"><h3 class="section-title">近期好评场次</h3><div class="highlight-list"><div v-for="item in highlights" :key="item.match_id" class="hl-item"><div class="hl-left"><span class="hl-check">✓</span><span :class="['hl-tag',item.is_key_match?'tag-km':'tag-ft']">{{ item.is_key_match?'重心':'精选' }}</span><span class="hl-teams">{{ item.home_team }} vs {{ item.away_team }}</span></div><div class="hl-preds"><span v-if="item.total_points" class="hl-pred">{{ item.total_points }}</span><span v-if="item.handicap" class="hl-pred">{{ item.handicap }}</span></div></div></div></div>
+        <div v-if="highlights.length>0" class="section-card">
+          <h3 class="section-title">近期好评场次</h3>
+          <div class="highlight-list">
+            <div v-for="item in highlights" :key="item.match_id" class="hl-item">
+              <div class="hl-row-top">
+                <span class="hl-check">✓</span>
+                <span :class="['hl-tag',item.is_key_match?'tag-km':'tag-ft']">{{ item.is_key_match?'重心':'精选' }}</span>
+                <span class="hl-badge-hit">好评</span>
+                <div class="hl-preds">
+                  <span v-if="item.total_points" class="hl-pred">{{ item.total_points }}</span>
+                  <span v-if="item.handicap" class="hl-pred">{{ item.handicap }}</span>
+                </div>
+              </div>
+              <div class="hl-teams">{{ item.home_team }} <span class="hl-vs">vs</span> {{ item.away_team }}</div>
+            </div>
+          </div>
+          <button class="hl-more-btn" @click="openUpgrade">
+            查看更多好评战绩
+            <svg class="hl-more-arrow" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
       </template>
       <template v-else>
         <div v-if="statistics" class="stat-hero">
@@ -42,6 +62,9 @@
         <div v-if="hasMoreHistory" class="load-more-wrap"><button class="load-more-btn" @click="loadMoreHistory">加载更多</button></div>
       </template>
     </div>
+
+    <!-- 非会员：开通会员浮动按钮 + 二维码弹窗（共享组件） -->
+    <UpgradeGuide ref="upgradeRef" :showFab="!isPaidUser" />
   </div>
 </template>
 
@@ -49,11 +72,14 @@
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import api from '../api'
+import UpgradeGuide from '../components/UpgradeGuide.vue'
 import Loading from '../components/Loading.vue'
 
 const auth = useAuthStore()
 const loading = ref(true), statistics = ref(null), monthlyStats = ref([]), highlights = ref([]), historyList = ref([])
 const expanded = ref({}), hasMoreHistory = ref(false), pageNum = ref(1), sportIdx = ref(0)
+const upgradeRef = ref(null)
+function openUpgrade() { upgradeRef.value?.open() }
 const sportTypes = ['', 'football', 'basketball']
 const isPaidUser = computed(() => auth.isPaidUser())
 const ceil = (n) => n != null ? Math.ceil(Number(n)) : 0
@@ -131,16 +157,28 @@ onMounted(loadData)
 .section-card { margin-top:14px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:24px 28px; box-shadow:var(--shadow-sm); }
 .section-title { font-size:15px; font-weight:700; color:var(--text); margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid var(--border-light); }
 .highlight-list { display:flex; flex-direction:column; }
-.hl-item { display:flex; align-items:center; justify-content:space-between; padding:14px 0; border-bottom:1px solid var(--border-light); }
+.hl-item { display:flex; flex-direction:column; gap:8px; padding:14px 0; border-bottom:1px solid var(--border-light); }
 .hl-item:last-child { border-bottom:none; }
-.hl-left { display:flex; align-items:center; gap:12px; flex:1; min-width:0; }
-.hl-check { width:32px; height:32px; border-radius:50%; background:#ECFDF5; color:var(--success); font-size:12px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.hl-row-top { display:flex; align-items:center; gap:8px; }
+.hl-check { width:24px; height:24px; border-radius:50%; background:#ECFDF5; color:var(--success); font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
 .hl-tag { font-size:10px; font-weight:600; padding:2px 8px; border-radius:4px; flex-shrink:0; }
 .tag-km { color:#B45309; background:#FFFDF5; border:1px solid #FDE68A; }
 .tag-ft { color:#6D28D9; background:#FAFAFE; border:1px solid #DDD6FE; }
-.hl-teams { font-size:15px; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.hl-preds { display:flex; gap:8px; flex-shrink:0; margin-left:16px; }
-.hl-pred { font-size:12px; font-weight:600; color:var(--primary); background:var(--primary-light); border:1px solid #C7D2FE; padding:4px 12px; border-radius:6px; }
+.hl-badge-hit { font-size:11px; font-weight:700; color:var(--success); background:#ECFDF5; padding:2px 10px; border-radius:20px; flex-shrink:0; }
+.hl-teams { font-size:15px; font-weight:600; color:var(--text); line-height:1.5; word-break:break-word; }
+.hl-vs { color:var(--muted); font-weight:500; font-size:13px; margin:0 2px; }
+.hl-preds { display:flex; gap:8px; flex-shrink:0; margin-left:auto; }
+.hl-pred { font-size:12px; font-weight:600; color:var(--primary); background:var(--primary-light); border:1px solid #C7D2FE; padding:4px 12px; border-radius:6px; white-space:nowrap; }
+/* 查看更多按钮 */
+.hl-more-btn {
+  display:flex; align-items:center; justify-content:center; gap:4px;
+  width:100%; margin-top:16px; padding:12px;
+  background:var(--primary-light); color:var(--primary);
+  border:1px solid #C7D2FE; border-radius:10px;
+  font-size:14px; font-weight:600; cursor:pointer; transition:all 0.15s;
+}
+.hl-more-btn:hover { background:#E0E7FF; box-shadow:0 2px 8px rgba(99,102,241,0.12); }
+.hl-more-arrow { width:15px; height:15px; }
 .filter-row { display:flex; justify-content:center; gap:10px; margin:16px 0 18px; }
 .filter-btn { padding:10px 24px; border-radius:24px; min-height:42px; background:var(--surface); border:1px solid var(--border); font-size:14px; font-weight:500; color:var(--text-secondary); transition:all 0.2s; }
 .filter-btn:hover { border-color:var(--primary); color:var(--primary); }

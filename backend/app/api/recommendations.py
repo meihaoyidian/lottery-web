@@ -1,7 +1,7 @@
 """
 推荐相关API端点
 """
-from fastapi import APIRouter, Depends, HTTPException, status, Query, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime, date
@@ -20,7 +20,6 @@ from app.schemas.recommendation import (
 )
 from app.services.recommendation_service import RecommendationService
 from app.services.history_service import HistoryService
-from app.services.subscription_service import SubscriptionService
 import logging
 
 logger = logging.getLogger(__name__)
@@ -33,43 +32,65 @@ router = APIRouter(prefix="/recommendations", tags=["recommendations"])
 
 @router.get("/today-status", response_model=dict)
 async def get_today_status(db: Session = Depends(get_db)):
-    """获取今日推荐状态 + 分析进度。确认状态由各卡片独立展示。"""
+    """
+    今日流程进度状态。
+
+    每日节奏：下午 2 点前更新场次 → 下午 4-6 点更新推荐数据 → 晚 7-8 点确认方案。
+    数据状态优先，时间仅用于空态措辞（提前完成也如实反映）。
+    """
     from sqlalchemy import text
     now = datetime.now()
+    today = now.date()
 
+    # 统一用 Python 时钟（避免混用 MySQL CURDATE 的时区问题）
     result = db.execute(
-        text("SELECT id, prediction_data, updated_at FROM recommendations WHERE DATE(created_at) = CURDATE() AND status = 'active' ORDER BY updated_at DESC")
+        text(
+            "SELECT prediction_data, is_confirmed, updated_at FROM recommendations "
+            "WHERE DATE(created_at) = :today AND status = 'active' "
+            "ORDER BY updated_at DESC"
+        ),
+        {"today": today.isoformat()}
     ).fetchall()
 
-    if not result:
-        if now.hour < 12:
-            return {"status": "settling", "count": 0, "last_updated": None}
-        return {"status": "empty", "count": 0, "last_updated": None}
+    total = len(result)
 
-    has_analysis = False
-    last_updated = None
-    for row in result:
-        if last_updated is None:
-            last_updated = row[2]
-        if has_analysis:
-            continue
+    # 空态：今日还没场次
+    if total == 0:
+        status = "pending" if now.hour < 14 else "delayed"
+        return {"status": status, "count": 0, "analyzed": 0, "confirmed": 0, "last_updated": None}
+
+    # 统计：已分析场次数、已确认场次数
+    def _row_has_analysis(pd_raw):
         try:
-            data = json.loads(row[1]) if isinstance(row[1], str) else (row[1] or {})
-            for m in data.get('single_matches', []):
-                if m.get('total_points') is not None or m.get('handicap') is not None:
-                    has_analysis = True
-                    break
+            data = json.loads(pd_raw) if isinstance(pd_raw, str) else (pd_raw or {})
+            return any(
+                m.get('total_points') is not None or m.get('handicap') is not None
+                for m in data.get('single_matches', [])
+            )
         except Exception:
-            pass
+            return False
 
-    if has_analysis:
-        status = 'analyzed'
+    analyzed = sum(1 for row in result if _row_has_analysis(row[0]))
+    confirmed = sum(1 for row in result if row[1])
+    last_updated = result[0][2]
+
+    # 数据状态优先的进度判定
+    if confirmed >= total:
+        status = "confirmed"      # 全部已确认
+    elif confirmed > 0:
+        status = "confirming"     # 部分确认中
+    elif analyzed >= total:
+        status = "analyzed"       # 全部已分析，待确认
+    elif analyzed > 0:
+        status = "analyzing"      # 部分分析中
     else:
-        status = 'created'
+        status = "created"        # 场次已出，待分析
 
     return {
         "status": status,
-        "count": len(result),
+        "count": total,
+        "analyzed": analyzed,
+        "confirmed": confirmed,
         "last_updated": last_updated.isoformat() if last_updated else None
     }
 
@@ -77,11 +98,10 @@ async def get_today_status(db: Session = Depends(get_db)):
 @router.post("/{recommendation_id}/toggle-confirm")
 async def toggle_confirm(
     recommendation_id: int,
-    background_tasks: BackgroundTasks,
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db)
 ):
-    """管理员逐张确认/取消确认推荐，确认时推送订阅消息"""
+    """管理员逐张确认/取消确认推荐"""
     recommendation = db.query(Recommendation).filter(
         Recommendation.id == recommendation_id,
         Recommendation.status == 'active'
@@ -94,24 +114,6 @@ async def toggle_confirm(
     recommendation.is_confirmed = not recommendation.is_confirmed
     db.commit()
     db.refresh(recommendation)
-
-    # 确认时推送订阅消息（仅首次确认，避免反复确认/取消导致重复推送）
-    if recommendation.is_confirmed:
-        from app.models.subscription import SubscriptionMessage
-        from datetime import timedelta
-        recent = db.query(SubscriptionMessage).filter(
-            SubscriptionMessage.recommendation_id == recommendation_id,
-            SubscriptionMessage.sent_at >= datetime.now() - timedelta(hours=1)
-        ).first()
-        if not recent:
-            background_tasks.add_task(
-                send_subscription_notification,
-                recommendation.id,
-                recommendation.title,
-                "今日场次已确认发布"
-            )
-        else:
-            logger.info(f"推荐 {recommendation_id} 1小时内已推送过，跳过")
 
     logger.info(f"管理员 {current_user.id} {'确认' if recommendation.is_confirmed else '取消确认'} 推荐 {recommendation_id}")
     return recommendation
@@ -233,14 +235,12 @@ async def get_recommendations(
     # 统一获取用户身份标识
     flags = get_user_flags(current_user)
     is_paid_user = flags['is_paid_valid']
-    is_trial_valid = flags['is_trial_valid']
-    is_key_match_member = flags['is_key_match_member']
 
-    # 管理员、付费用户或有效体验用户可以查看完整内容
-    can_view_full_content = flags['is_admin'] or is_paid_user or is_trial_valid
+    # 管理员、付费用户可以查看完整内容
+    can_view_full_content = flags['is_admin'] or is_paid_user
 
     if current_user:
-        logger.info(f"用户 {current_user.id} 权限检查: is_paid_user={is_paid_user}, is_trial_valid={is_trial_valid}, is_key_match_member={is_key_match_member}, can_view_full_content={can_view_full_content}")
+        logger.info(f"用户 {current_user.id} 权限检查: is_paid_user={is_paid_user}, can_view_full_content={can_view_full_content}")
     else:
         logger.info(f"匿名用户权限检查: can_view_full_content={can_view_full_content}")
 
@@ -251,7 +251,6 @@ async def get_recommendations(
 
         # 检查原始数据中是否包含重心场次
         has_key_match = False
-        is_user_bound_key_match = False  # 是否为用户绑定的重心场次推荐
 
         if rec_data.get('prediction_data'):
             prediction_data = rec_data['prediction_data']
@@ -260,49 +259,37 @@ async def get_recommendations(
                 # 检查是否有重心场次
                 has_key_match = any(match.get('is_key_match', False) for match in prediction_data['single_matches'])
 
-                # 如果是重心场次付费用户且绑定了特定推荐
-                if is_key_match_member and current_user:
-                    user_bound_recommendation_ids = current_user.key_match_recommendation_ids
-
-                    # 如果用户绑定了特定推荐（数组），且当前推荐在绑定列表中
-                    if user_bound_recommendation_ids is not None and len(user_bound_recommendation_ids) > 0:
-                        if rec_data['id'] in user_bound_recommendation_ids:
-                            # 是用户绑定的推荐，只显示重心场次
-                            is_user_bound_key_match = True
-                            prediction_data['single_matches'] = [
-                                match for match in prediction_data['single_matches']
-                                if match.get('is_key_match', False)
-                            ]
-                            logger.info(f"重心场次用户-绑定推荐: 推荐 {rec_data['id']}, 原始 {original_count} 场，过滤后 {len(prediction_data['single_matches'])} 场")
-                        # 否则继续正常处理
-
-                # 体验会员：重心场次加锁（已标记结果的场次不锁）
-                if current_user:
-                    logger.info(f"用户 {current_user.id}: is_trial_valid={is_trial_valid}, is_paid_user={is_paid_user}")
-                if is_trial_valid and not is_paid_user:
-                    for match in prediction_data['single_matches']:
-                        has_result = match.get('hit_status') and match.get('hit_status') != 'pending'
-                        if not has_result and (match.get('is_key_match') or match.get('is_featured')):
-                            match['is_trial_locked'] = True
-                            logger.info(f"  → 锁定场次: {match.get('match_id')} (key={match.get('is_key_match')} featured={match.get('is_featured')})")
-
-                # 如果不是付费用户且不是体验用户，为非公开场次添加打码标记（已标记结果的场次不打码）
+                # 非付费非管理员：真正剥离敏感预测数据（不能只发标记，否则前端可直接读取）
                 if not can_view_full_content:
-                    prediction_data['single_matches'] = [
-                        {
-                            **match,
-                            'is_masked': not match.get('is_public', False) and not (
-                                match.get('hit_status') and match.get('hit_status') != 'pending'
-                            )
-                        }
-                        for match in prediction_data['single_matches']
-                    ]
-                    masked_count = sum(1 for match in prediction_data['single_matches'] if match.get('is_masked', False))
-                    logger.info(f"免费用户打码处理: 推荐 {rec_data['id']}, 总共 {original_count} 场，打码 {masked_count} 场")
+                    masked_matches = []
+                    masked_count = 0
+                    for match in prediction_data['single_matches']:
+                        # 公开场次 或 已出结果的场次 → 保留完整（引流钩子/战绩展示）
+                        is_resulted = match.get('hit_status') and match.get('hit_status') != 'pending'
+                        if match.get('is_public', False) or is_resulted:
+                            masked_matches.append(match)
+                            continue
+                        # 其余场次：删除核心预测字段，标记 _blur 供前端展示锁态
+                        m = {**match}
+                        m.pop('total_points', None)
+                        m.pop('handicap', None)
+                        m.pop('prediction_basis', None)
+                        m['_blur'] = True
+                        masked_matches.append(m)
+                        masked_count += 1
+                    prediction_data['single_matches'] = masked_matches
+                    logger.info(f"免费用户内容遮罩: 推荐 {rec_data['id']}, 总共 {original_count} 场，锁定 {masked_count} 场")
+
+            # 组合方案：非会员一律剥离内容并标记
+            if not can_view_full_content and prediction_data.get('parlays'):
+                prediction_data['parlays'] = [
+                    {**p, 'bet_types': []} for p in prediction_data['parlays']
+                ]
+                rec_data['_blur_parlay'] = True
 
         # 添加 has_key_match 和 is_user_bound_key_match 字段到推荐数据中
         rec_data['has_key_match'] = has_key_match
-        rec_data['is_user_bound_key_match'] = is_user_bound_key_match
+        rec_data['is_user_bound_key_match'] = False
         processed_recommendations.append(rec_data)
 
     return {
@@ -353,14 +340,11 @@ async def get_recommendation_detail(
 @router.post("", response_model=RecommendationResponse, status_code=status.HTTP_201_CREATED)
 async def create_recommendation(
     recommendation_data: RecommendationCreate,
-    background_tasks: BackgroundTasks,
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db)
 ):
     """
     创建新推荐（管理员）
-
-    需要管理员权限。创建成功后会向所有订阅用户发送通知。
     """
     import json
 
@@ -398,39 +382,15 @@ async def create_recommendation(
         )
 
 
-def send_subscription_notification(
-    recommendation_id: int,
-    title: str,
-    update_content: str
-):
-    """发送订阅消息的后台任务（独立 DB session，避免依赖注入 session 已关闭）"""
-    from app.database import SessionLocal
-    db = SessionLocal()
-    try:
-        SubscriptionService.send_recommendation_update(
-            db=db,
-            recommendation_id=recommendation_id,
-            title=title,
-            update_content=update_content
-        )
-    except Exception as e:
-        logger.error(f"发送订阅消息失败: {str(e)}")
-    finally:
-        db.close()
-
-
 @router.put("/{recommendation_id}", response_model=RecommendationResponse)
 async def update_recommendation(
     recommendation_id: int,
     recommendation_data: RecommendationUpdate,
-    background_tasks: BackgroundTasks,
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db)
 ):
     """
     更新推荐（管理员）
-
-    需要管理员权限。更新成功后会向所有订阅用户发送通知。
     """
     logger.info(f"管理员 {current_user.id} 更新推荐 {recommendation_id}")
 

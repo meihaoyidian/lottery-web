@@ -28,7 +28,6 @@ async def lifespan(app: FastAPI):
         from app.database import engine, Base
         from app.models.user import User
         from app.models.recommendation import Recommendation
-        from app.models.subscription import RecommendationSubscription, SubscriptionMessage
         from app.models.view_record import ViewRecord
         from app.models.daily_achievement import DailyAchievement
 
@@ -132,14 +131,13 @@ async def get_system_config():
     }
 
 # 导入路由
-from app.api import auth, recommendations, profile, history, subscriptions, view_records, daily_achievements, stats
+from app.api import auth, recommendations, profile, history, view_records, daily_achievements, stats
 
 # 注册路由
 app.include_router(auth.router, prefix=f"{settings.API_V1_PREFIX}/auth", tags=["认证"])
 app.include_router(recommendations.router, prefix=f"{settings.API_V1_PREFIX}", tags=["推荐"])
 app.include_router(profile.router, prefix=f"{settings.API_V1_PREFIX}", tags=["个人资料"])
 app.include_router(history.router, prefix=f"{settings.API_V1_PREFIX}", tags=["历史记录"])
-app.include_router(subscriptions.router, prefix=f"{settings.API_V1_PREFIX}/subscriptions", tags=["订阅消息"])
 app.include_router(view_records.router, prefix=f"{settings.API_V1_PREFIX}", tags=["浏览记录"])
 app.include_router(daily_achievements.router, prefix=f"{settings.API_V1_PREFIX}", tags=["昨日战绩"])
 app.include_router(stats.router, prefix=f"{settings.API_V1_PREFIX}/stats", tags=["统计数据"])

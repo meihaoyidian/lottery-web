@@ -111,9 +111,7 @@ async def get_recommendation_viewers(
                 last_viewed_at=r['last_viewed_at'],
                 first_viewed_at=r['first_viewed_at'],
                 user_role=r['user_role'],
-                user_is_paid=r['user_is_paid'],
-                user_is_trial=r['user_is_trial'],
-                user_is_key_match_member=r['user_is_key_match_member']
+                user_is_paid=r['user_is_paid']
             )
             for r in records
         ]
@@ -126,9 +124,7 @@ async def get_recommendation_viewers(
                 user_nickname="未登录用户",
                 view_count=guest_view_count,
                 user_role="guest",
-                user_is_paid=False,
-                user_is_trial=False,
-                user_is_key_match_member=False
+                user_is_paid=False
             )
             record_responses.insert(0, guest_entry)
 

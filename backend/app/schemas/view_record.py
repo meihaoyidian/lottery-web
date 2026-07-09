@@ -23,8 +23,6 @@ class ViewRecordResponse(BaseModel):
     user_created_at: Optional[datetime] = None  # 新增：用户注册时间
     user_role: Optional[str] = None
     user_is_paid: Optional[bool] = None
-    user_is_trial: Optional[bool] = None
-    user_is_key_match_member: Optional[bool] = None
     # 新增：浏览统计字段
     view_count: Optional[int] = None  # 该用户的浏览次数
     last_viewed_at: Optional[datetime] = None  # 最后浏览时间

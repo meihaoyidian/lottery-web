@@ -6,7 +6,10 @@
       <!-- 状态条 -->
       <div v-if="scheduleStatus" class="status-bar" :class="scheduleStatus.css">
         <div class="status-dot" :class="scheduleStatus.css"></div>
-        <span class="status-text">{{ scheduleStatus.text }}</span>
+        <span class="status-text">
+          <span class="status-text-full">{{ scheduleStatus.text }}</span>
+          <span class="status-text-short">{{ scheduleStatus.short || scheduleStatus.text }}</span>
+        </span>
         <span v-if="scheduleStatus.tag" class="status-tag" :class="scheduleStatus.css">{{ scheduleStatus.tag }}</span>
       </div>
 
@@ -17,59 +20,64 @@
         <span class="heat-label">次今日分析</span>
         <span class="heat-dot-sep">·</span>
         <span class="heat-num">{{ socialProof.totalUsers }}</span>
-        <span class="heat-label">位用户使用</span>
+        <span class="heat-label">位会员在用</span>
       </div>
 
-      <!-- 体验提示 -->
-      <div v-if="isTrial" class="trial-banner">
-        <div class="trial-banner-inner">
-          <span class="trial-icon"></span>
-          <div class="trial-body">
-            <span class="trial-title">AI 体验专享已激活</span>
-            <span class="trial-sub">1 天全量 AI 分析权益生效中</span>
-          </div>
+      <!-- 昨日战绩 Banner -->
+      <div
+        v-if="latestAchievement"
+        class="achievement-banner"
+        :class="{ 'is-admin': auth.isAdmin() }"
+        @click="navigateToAchievement"
+      >
+        <!-- 背景光晕层 -->
+        <div class="ach-atmosphere">
+          <div class="ach-orb ach-orb--primary"></div>
+          <div class="ach-orb ach-orb--secondary"></div>
         </div>
-      </div>
 
-      <!-- 昨日战绩 -->
-      <div v-if="latestAchievement" class="achievement-card">
-        <div class="ach-top">
-          <div class="ach-left">
-            <span class="ach-label">昨日 AI 分析成绩</span>
-            <span class="ach-title">{{ latestAchievement.title }}</span>
-            <span v-if="latestAchievement.subtitle" class="ach-sub">{{ latestAchievement.subtitle }}</span>
-          </div>
-          <div class="ach-right">
-            <svg class="ach-ring" viewBox="0 0 72 72">
-              <circle cx="36" cy="36" r="30" fill="none" stroke="#E2E8F0" stroke-width="6" />
-              <circle
-                cx="36" cy="36" r="30" fill="none"
-                stroke="url(#achGrad)" stroke-width="6"
-                stroke-linecap="round"
-                :stroke-dasharray="achDasharray"
-                stroke-dashoffset="0"
-                transform="rotate(-90 36 36)"
-              />
-              <defs>
-                <linearGradient id="achGrad" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0%" stop-color="#6366F1" />
-                  <stop offset="100%" stop-color="#8B5CF6" />
-                </linearGradient>
-              </defs>
-            </svg>
-            <div class="ach-ring-text">
-              <span class="ach-ring-val">{{ achPercent }}%</span>
-              <span class="ach-ring-label">好评率</span>
+        <div class="ach-inner">
+          <!-- 头部：标签 + 徽章 -->
+          <div class="ach-header">
+            <div class="ach-header-label">
+              <span class="ach-dot"></span>
+              <span class="ach-label-text">昨日 AI 战绩</span>
+            </div>
+            <div class="ach-badge">
+              <svg class="ach-badge-icon" viewBox="0 0 16 16" fill="none">
+                <path d="M3 13L13 3M13 3H5.5M13 3v7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <span>昨日成绩</span>
             </div>
           </div>
+
+          <!-- 主体：标题 + 副标题 -->
+          <div class="ach-body">
+            <h3 class="ach-title">{{ latestAchievement.title }}</h3>
+            <p v-if="latestAchievement.subtitle" class="ach-subtitle">{{ latestAchievement.subtitle }}</p>
+          </div>
+
+          <!-- 亮点标签 -->
+          <div v-if="latestAchievement.highlights?.length" class="ach-highlights">
+            <span v-for="(h, i) in latestAchievement.highlights" :key="i" class="ach-highlight-tag">
+              <span v-if="h.icon" class="ach-highlight-icon">{{ h.icon }}</span>
+              <span>{{ h.text }}</span>
+            </span>
+          </div>
+
+          <!-- 描述 -->
+          <div v-if="latestAchievement.description" class="ach-footer">
+            <p class="ach-desc">{{ latestAchievement.description }}</p>
+          </div>
+
+          <!-- 管理员入口暗示 -->
+          <div v-if="auth.isAdmin()" class="ach-admin-hint">
+            <svg viewBox="0 0 16 16" fill="none" class="ach-admin-icon">
+              <path d="M3 8h10M8 3l5 5-5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>点击管理战绩</span>
+          </div>
         </div>
-        <!-- highlights -->
-        <div v-if="latestAchievement.highlights?.length" class="ach-tags">
-          <span v-for="(h, i) in latestAchievement.highlights" :key="i" class="ach-tag">
-            <span v-if="h.icon" class="ach-tag-icon">{{ h.icon }}</span>{{ h.text }}
-          </span>
-        </div>
-        <p v-if="latestAchievement.description" class="ach-desc">{{ latestAchievement.description }}</p>
       </div>
 
       <!-- 筛选 -->
@@ -99,25 +107,31 @@
           :showAnalysis="rec.showAnalysis"
           :isAnalysisPending="rec.isAnalysisPending"
           :reviewMode="false"
-          :isTrial="isTrial"
           :isFirst="index === 0"
+          @upgrade="openUpgrade"
         />
         <div v-if="hasMore" class="load-more" @click="loadMore">
           <span>{{ loadingMore ? '加载中...' : '加载更多' }}</span>
         </div>
       </div>
     </div>
+
+    <!-- 非会员：开通会员浮动按钮 + 二维码弹窗（共享组件） -->
+    <UpgradeGuide ref="upgradeRef" :showFab="showUpgradeEntry" />
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import api from '../api'
 import RecommendationCard from '../components/RecommendationCard.vue'
+import UpgradeGuide from '../components/UpgradeGuide.vue'
 import Loading from '../components/Loading.vue'
 
 const auth = useAuthStore()
+const router = useRouter()
 
 const loading = ref(true)
 const loadingMore = ref(false)
@@ -137,24 +151,32 @@ const scheduleStatus = ref(null)
 const socialProof = reactive({ todayViews: 0, totalUsers: 0 })
 
 const isPaidUser = computed(() => auth.isPaidUser())
-const isTrial = computed(() => auth.isTrial())
 
-// 成就环形图
-const achPercent = computed(() => {
-  const raw = latestAchievement.value?.accuracy_rate
-  return raw != null ? Math.ceil(Number(raw)) : 0
-})
-const achDasharray = computed(() => {
-  const pct = achPercent.value
-  const len = 2 * Math.PI * 30 // ~188.5
-  return `${(pct / 100) * len} ${len}`
-})
+// 二维码升级弹窗（非会员引导，共享组件）
+const upgradeRef = ref(null)
+// 非会员（且非管理员）才显示升级入口
+const showUpgradeEntry = computed(() => !isPaidUser.value && !auth.isAdmin())
+function openUpgrade() {
+  upgradeRef.value?.open()
+}
+// 非会员进页面自动弹一次（同一会话不重复）
+function maybeAutoPopup() {
+  if (!showUpgradeEntry.value) return
+  if (sessionStorage.getItem('upgrade_popup_shown')) return
+  sessionStorage.setItem('upgrade_popup_shown', '1')
+  upgradeRef.value?.open()
+}
 
+// 今日流程进度：场次(≤14点) → 推荐数据(16-18点) → 确认方案(19-20点)
+// text 桌面完整文案；short 移动端精简文案
 const statusMap = {
-  settling:  { text: '昨日场次待结束，数据结算中', tag: '结算中', css: 'st-pending' },
-  empty:     { text: '今日 AI 分析方案生成中，预计 14:00 发布', tag: '待更新', css: 'st-pending' },
-  created:   { text: '今日方案已创建，AI 模型分析中', tag: '分析中', css: 'st-live' },
-  analyzed:  { text: '今日 AI 分析方案已就绪', tag: '已更新', css: 'st-live' }
+  pending:    { text: '今日场次更新中，预计下午 2 点前发布', short: '场次更新中 · 预计 14:00 前', tag: '待更新', css: 'st-pending' },
+  delayed:    { text: '今日场次更新中，请稍候',                short: '场次更新中，请稍候',        tag: '待更新', css: 'st-pending' },
+  created:    { text: '今日场次已更新，推荐数据分析中，预计下午 4–6 点', short: '数据分析中 · 预计 16–18 点', tag: '分析中', css: 'st-live' },
+  analyzing:  { text: 'AI 推荐数据更新中，预计晚间完成',      short: '推荐数据更新中',            tag: '更新中', css: 'st-live' },
+  analyzed:   { text: '推荐数据已更新，等待晚间确认方案',      short: '数据已更新 · 待确认',        tag: '已更新', css: 'st-live' },
+  confirming: { text: '今日方案确认中，预计晚 7–8 点完成',    short: '方案确认中 · 预计 19–20 点', tag: '确认中', css: 'st-done' },
+  confirmed:  { text: '今日方案已全部确认发布',              short: '方案已确认发布',            tag: '已确认', css: 'st-done' }
 }
 
 function recHasAnalysis(rec) {
@@ -179,7 +201,7 @@ async function loadRecommendations(isLoadMore = false) {
     const processed = res.recommendations.map(rec => {
       const ok = recHasAnalysis(rec)
       const pending = hasFullAccess && !ok
-      const show = pending ? false : (isPaidUser.value || isTrial.value)
+      const show = pending ? false : isPaidUser.value
       return { ...rec, showAnalysis: show, isAnalysisPending: pending }
     })
 
@@ -197,9 +219,12 @@ async function loadRecommendations(isLoadMore = false) {
 async function loadScheduleStatus() {
   try {
     const res = await api.getTodayStatus()
-    scheduleStatus.value = { ...(statusMap[res.status] || statusMap.empty), status: res.status || 'empty' }
+    const mapped = statusMap[res.status] || statusMap.pending
+    scheduleStatus.value = { ...mapped, status: res.status || 'pending' }
   } catch {
-    scheduleStatus.value = { ...statusMap.empty, status: 'empty' }
+    // 网络异常兜底：按时间猜测空态文案，不误导
+    const fallback = new Date().getHours() < 14 ? statusMap.pending : statusMap.delayed
+    scheduleStatus.value = { ...fallback, status: 'pending' }
   }
 }
 
@@ -214,7 +239,48 @@ async function loadSocialProof() {
 }
 
 async function loadAchievement() {
-  try { latestAchievement.value = await api.getLatestAchievement() } catch { /* ignore */ }
+  try {
+    // 添加 _t 参数破坏浏览器 HTTP 缓存
+    const achievement = await api.getLatestAchievement({ _t: Date.now() })
+    if (achievement) {
+      // 解析 highlights：后端 JSON 字段可能返回字符串
+      if (achievement.highlights && typeof achievement.highlights === 'string') {
+        try { achievement.highlights = JSON.parse(achievement.highlights) } catch { achievement.highlights = [] }
+      }
+      if (!Array.isArray(achievement.highlights)) {
+        achievement.highlights = []
+      }
+      latestAchievement.value = achievement
+    }
+  } catch { /* ignore */ }
+}
+
+// 页面可见时静默刷新 banner 数据（等同小程序 onShow）
+async function refreshBannerData() {
+  await Promise.all([
+    loadAchievement(),
+    loadSocialProof(),
+    loadScheduleStatus()
+  ])
+}
+
+function handleVisibilityChange() {
+  if (document.visibilityState === 'visible') {
+    refreshBannerData()
+  }
+}
+
+function handlePageShow(event) {
+  // bfcache 恢复：页面从浏览器往返缓存中恢复时重新拉取
+  if (event.persisted) {
+    refreshBannerData()
+  }
+}
+
+// 管理员点击战绩 banner → 跳转编辑页
+function navigateToAchievement() {
+  if (!auth.isAdmin() || !latestAchievement.value) return
+  router.push(`/admin/achievements/edit/${latestAchievement.value.id}`)
 }
 
 function onSportFilter(index) {
@@ -230,6 +296,18 @@ function loadMore() { loadRecommendations(true) }
 onMounted(async () => {
   await auth.fetchUser()
   await Promise.all([loadScheduleStatus(), loadRecommendations(), loadSocialProof(), loadAchievement()])
+
+  // 非会员自动弹一次二维码引导（同一会话仅一次）
+  maybeAutoPopup()
+
+  // 页面可见性监听：等同小程序 onShow，切换 tab 或从其他页面返回时自动刷新
+  document.addEventListener('visibilitychange', handleVisibilityChange)
+  window.addEventListener('pageshow', handlePageShow)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
+  window.removeEventListener('pageshow', handlePageShow)
 })
 </script>
 
@@ -260,23 +338,40 @@ onMounted(async () => {
   background: linear-gradient(90deg, transparent, rgba(99,102,241,0.05), transparent);
   animation: shimmer 3s ease-in-out infinite; pointer-events: none;
 }
+.status-bar.st-done {
+  background: linear-gradient(135deg, #ECFDF5, #F0FDF4);
+  border-color: #A7F3D0;
+  overflow: hidden; position: relative;
+}
+.status-bar.st-done::after {
+  content: ''; position: absolute; top: 0; left: -60%; width: 50%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(16,185,129,0.06), transparent);
+  animation: shimmer 3s ease-in-out infinite; pointer-events: none;
+}
 @keyframes shimmer { 0% { left: -60%; } 100% { left: 120%; } }
 
 .status-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
 .status-dot.st-pending { background: #F59E0B; animation: pulse-dot 2s ease-in-out infinite; }
 .status-dot.st-live { background: #6366F1; animation: pulse-dot 2s ease-in-out infinite; }
+.status-dot.st-done { background: #10B981; animation: pulse-dot 2s ease-in-out infinite; }
 @keyframes pulse-dot {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.4; }
 }
 
-.status-text { flex: 1; font-size: 14px; font-weight: 600; color: var(--text-secondary); }
+.status-text {
+  flex: 1; min-width: 0; font-size: 14px; font-weight: 600; color: var(--text-secondary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+/* 桌面显示完整文案，移动端显示精简文案 */
+.status-text-short { display: none; }
 .status-tag {
   padding: 4px 14px; border-radius: 20px; font-size: 12px; font-weight: 700;
   flex-shrink: 0;
 }
 .status-tag.st-pending { background: #FEF3C7; color: #92400E; }
 .status-tag.st-live { background: #C7D2FE; color: #3730A3; }
+.status-tag.st-done { background: #D1FAE5; color: #065F46; }
 
 /* ===========================
    实时热度
@@ -301,59 +396,237 @@ onMounted(async () => {
 .heat-dot-sep { color: #CBD5E1; margin: 0 4px; }
 
 /* ===========================
-   体验提示
+   昨日战绩 Banner
    =========================== */
-.trial-banner {
-  margin-bottom: 14px; padding: 16px 18px;
-  background: linear-gradient(135deg, #ECFDF5, #F0FDF4);
-  border: 1px solid #A7F3D0; border-radius: var(--radius);
-}
-.trial-banner-inner { display: flex; align-items: center; gap: 14px; }
-.trial-icon { font-size: 22px; flex-shrink: 0; }
-.trial-body { display: flex; flex-direction: column; gap: 2px; }
-.trial-title { font-size: 15px; font-weight: 700; color: #065F46; }
-.trial-sub { font-size: 12px; color: #10B981; font-weight: 500; }
-
-/* ===========================
-   昨日战绩卡片
-   =========================== */
-.achievement-card {
-  margin-bottom: 16px; padding: 24px;
-  background: var(--surface);
+.achievement-banner {
+  position: relative;
+  margin-bottom: 18px;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  cursor: default;
+  transition: box-shadow 0.35s ease, transform 0.35s ease;
+  /* 渐变底色 — 比纯白更有层次，保持亮色调 */
+  background: linear-gradient(160deg, #FFFFFF 0%, #FAFBFF 40%, #F5F3FF 100%);
   border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-md);
+  animation: ach-enter 0.55s cubic-bezier(0.22, 0.61, 0.36, 1) both;
 }
 
-.ach-top { display: flex; align-items: center; justify-content: space-between; }
-.ach-left { display: flex; flex-direction: column; gap: 4px; }
-.ach-label { font-size: 11px; font-weight: 600; color: var(--primary); letter-spacing: 0.06em; }
-.ach-title { font-size: 18px; font-weight: 800; color: var(--text); line-height: 1.3; }
-.ach-sub { font-size: 13px; color: var(--muted); }
-
-.ach-right { position: relative; width: 72px; height: 72px; flex-shrink: 0; }
-.ach-ring { width: 72px; height: 72px; }
-.ach-ring-text {
-  position: absolute; inset: 0;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
+.achievement-banner.is-admin {
+  cursor: pointer;
 }
-.ach-ring-val { font-size: 18px; font-weight: 800; color: var(--text); line-height: 1; }
-.ach-ring-label { font-size: 10px; color: var(--muted); margin-top: 2px; }
-
-.ach-tags {
-  display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px;
-  padding-top: 16px; border-top: 1px solid var(--border-light);
+.achievement-banner.is-admin:hover {
+  border-color: #C7D2FE;
+  box-shadow:
+    0 8px 30px rgba(99,102,241,0.12),
+    0 2px 8px rgba(99,102,241,0.06);
+  transform: translateY(-1px);
 }
-.ach-tag {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 6px 14px; background: var(--primary-light);
-  border-radius: 20px; font-size: 13px; font-weight: 600; color: var(--primary-hover);
+.achievement-banner.is-admin:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-md);
 }
-.ach-tag-icon { font-size: 14px; }
 
+/* ---- 背景光晕层 ---- */
+.ach-atmosphere {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+.ach-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: 0.5;
+}
+.ach-orb--primary {
+  width: 220px; height: 220px;
+  top: -80px; left: -60px;
+  background: rgba(99,102,241,0.12);
+  animation: ach-orb-breathe 6s ease-in-out infinite;
+}
+.ach-orb--secondary {
+  width: 180px; height: 180px;
+  bottom: -60px; right: -40px;
+  background: rgba(167,139,250,0.10);
+  animation: ach-orb-breathe 6s ease-in-out 3s infinite;
+}
+
+@keyframes ach-orb-breathe {
+  0%, 100% { transform: scale(1); opacity: 0.5; }
+  50%      { transform: scale(1.25); opacity: 0.75; }
+}
+
+/* ---- 内容层 ---- */
+.ach-inner {
+  position: relative;
+  z-index: 1;
+  padding: 22px 24px;
+}
+
+/* ---- 头部 ---- */
+.ach-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+.ach-header-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.ach-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--primary);
+  box-shadow: 0 0 6px var(--primary-glow);
+  animation: ach-dot-pulse 2s ease-in-out infinite;
+}
+@keyframes ach-dot-pulse {
+  0%, 100% { box-shadow: 0 0 4px var(--primary-glow); }
+  50%      { box-shadow: 0 0 12px rgba(99,102,241,0.4); }
+}
+.ach-label-text {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* 徽章 */
+.ach-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #fff;
+  background: linear-gradient(135deg, #6366F1, #8B5CF6);
+  box-shadow: 0 2px 8px rgba(99,102,241,0.25);
+  flex-shrink: 0;
+}
+.ach-badge-icon {
+  width: 12px; height: 12px;
+  flex-shrink: 0;
+}
+
+/* ---- 主体 ---- */
+.ach-body {
+  min-width: 0;
+}
+.ach-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+.ach-subtitle {
+  margin-top: 6px;
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* ---- 亮点标签 ---- */
+.ach-highlights {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border-light);
+}
+.ach-highlight-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 15px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary-hover);
+  background: var(--primary-light);
+  border: 1px solid rgba(99,102,241,0.08);
+  transition: all 0.2s ease;
+}
+.ach-highlight-tag:hover {
+  background: #E0E7FF;
+  border-color: #C7D2FE;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(99,102,241,0.12);
+}
+.ach-highlight-icon {
+  font-size: 16px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+/* ---- 描述 ---- */
+.ach-footer {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-light);
+}
 .ach-desc {
-  margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border-light);
-  font-size: 13px; color: var(--text-secondary); line-height: 1.7;
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.8;
+  white-space: pre-line;  /* 保留管理员输入的换行，与编辑页预览一致 */
+}
+
+/* ---- 管理员暗示 ---- */
+.ach-admin-hint {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border);
+  font-size: 11px;
+  color: var(--muted);
+  opacity: 0;
+  transform: translateY(4px);
+  transition: all 0.3s ease;
+}
+.achievement-banner.is-admin:hover .ach-admin-hint {
+  opacity: 1;
+  transform: translateY(0);
+}
+.ach-admin-icon {
+  width: 13px; height: 13px;
+  flex-shrink: 0;
+}
+
+/* ---- 入场动画 ---- */
+@keyframes ach-enter {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ---- 响应式 ---- */
+@media (max-width: 767px) {
+  .ach-inner { padding: 18px 16px; }
+  .ach-title { font-size: 17px; }
+  .ach-subtitle { font-size: 13px; }
+  .ach-badge { padding: 5px 12px; font-size: 10px; }
+  .ach-highlight-tag { font-size: 12px; padding: 5px 12px; }
+  .ach-highlight-icon { font-size: 14px; }
+  .ach-orb--primary { width: 140px; height: 140px; top: -50px; left: -40px; }
+  .ach-orb--secondary { width: 120px; height: 120px; bottom: -40px; right: -30px; }
 }
 
 /* ===========================
@@ -395,10 +668,13 @@ onMounted(async () => {
 .load-more:hover { color: var(--primary-hover); }
 
 @media (max-width: 767px) {
-  .status-bar { padding: 12px 14px; }
+  .status-bar { padding: 12px 14px; gap: 10px; }
   .status-text { font-size: 13px; }
-  .achievement-card { padding: 20px; }
-  .ach-title { font-size: 16px; }
+  /* 移动端切换为精简文案，避免溢出 */
+  .status-text-full { display: none; }
+  .status-text-short { display: inline; }
+  .status-tag { padding: 4px 11px; font-size: 11px; }
   .filter-btn { padding: 8px 20px; font-size: 13px; }
 }
+
 </style>

@@ -26,31 +26,23 @@ def get_user_flags(user: Optional[User]) -> dict:
     返回字段:
         is_admin:          管理员
         is_paid_valid:     付费期内 (paid_end_time 未过期)
-        is_trial_valid:    体验期内 (trial_end_time 未过期)
-        is_key_match_member: 重心场次会员
-        has_full_access:   admin | paid | trial 任一满足
+        has_full_access:   admin | paid 任一满足
     """
     if user is None:
         return {
             'is_admin': False,
             'is_paid_valid': False,
-            'is_trial_valid': False,
-            'is_key_match_member': False,
             'has_full_access': False,
         }
 
     now = datetime.now()
     is_admin = user.role == UserRole.admin
     is_paid_valid = bool(user.paid_end_time and now < user.paid_end_time)
-    is_trial_valid = bool(user.trial_end_time and now < user.trial_end_time)
-    is_key_match_member = user.is_key_match_member
-    has_full_access = is_admin or is_paid_valid or is_trial_valid
+    has_full_access = is_admin or is_paid_valid
 
     return {
         'is_admin': is_admin,
         'is_paid_valid': is_paid_valid,
-        'is_trial_valid': is_trial_valid,
-        'is_key_match_member': is_key_match_member,
         'has_full_access': has_full_access,
     }
 
@@ -138,7 +130,7 @@ async def require_paid_user(
     current_user: User = Depends(get_current_user)
 ) -> User:
     """
-    要求付费用户、重心场次用户或体验用户权限（管理员自动视为付费用户）
+    要求付费用户权限（管理员自动视为付费用户）
 
     Args:
         current_user: 当前用户
@@ -147,7 +139,7 @@ async def require_paid_user(
         当前用户对象
 
     Raises:
-        HTTPException: 如果用户不是付费用户、重心场次用户、有效体验用户或提审用户
+        HTTPException: 如果用户不是付费用户
     """
     # 管理员自动视为付费用户
     if current_user.role == UserRole.admin:
@@ -156,21 +148,9 @@ async def require_paid_user(
     # 检查付费用户是否有效（只检查 paid_end_time，不依赖 is_paid 标志）
     if current_user.paid_end_time:
         if datetime.now() < current_user.paid_end_time:
-            # 付费期未过期，允许访问
             return current_user
 
-    # 检查是否为有效体验用户（只要 trial_end_time 存在且未过期即可）
-    if current_user.trial_end_time:
-        if datetime.now() < current_user.trial_end_time:
-            # 体验期未过期，允许访问
-            return current_user
-
-    # 检查是否为重心场次付费用户
-    if current_user.is_key_match_member:
-        # 重心场次用户可以访问
-        return current_user
-
-    logger.warning(f"用户 {current_user.id} 尝试访问付费内容但未付费且不是有效体验用户或重心场次用户")
+    logger.warning(f"用户 {current_user.id} 尝试访问付费内容但未付费")
     raise HTTPException(
         status_code=status.HTTP_403_FORBIDDEN,
         detail="此功能仅限付费用户访问，请升级账户",

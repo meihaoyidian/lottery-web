@@ -75,19 +75,20 @@
                 </div>
               </div>
               <div v-if="match.prediction_basis" class="mc-summary">
-                                <span class="mc-summary-text">{{ match.prediction_basis }}</span>
+                <span class="mc-summary-text">{{ match.prediction_basis }}</span>
               </div>
             </template>
 
             <!-- 锁定 -->
-            <div v-else-if="match.is_trial_locked" class="mc-locked mc-trial-locked">
-              <span class="mc-locked-text">—</span>
-            </div>
             <div v-else-if="isAnalysisPending" class="mc-locked mc-pending">
               <span class="mc-locked-text">模型数据实时更新中</span>
             </div>
-            <div v-else class="mc-locked">
-              <span class="mc-locked-text">—</span>
+            <div v-else class="mc-locked mc-member" @click="$emit('upgrade')">
+              <svg class="mc-lock-icon" viewBox="0 0 24 24" fill="none">
+                <rect x="5" y="11" width="14" height="9" rx="2" stroke="currentColor" stroke-width="1.8"/>
+                <path d="M8 11V8a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              </svg>
+              <span class="mc-locked-text">开通会员查看 AI 预测</span>
             </div>
           </div>
         </div>
@@ -102,10 +103,10 @@
         </div>
 
         <!-- 组合（锁定） -->
-        <div v-else-if="parlay && parlay.length > 0 && blurParlay" class="parlay-section parlay-locked">
+        <div v-else-if="parlay && parlay.length > 0 && blurParlay" class="parlay-section parlay-locked" @click="$emit('upgrade')">
           <div class="parlay-locked-header">
             <span class="parlay-locked-title">组合方案</span>
-            <div class="parlay-locked-badge"><span>{{ isAnalysisPending ? '即将更新' : '—' }}</span></div>
+            <div class="parlay-locked-badge"><span>{{ isAnalysisPending ? '即将更新' : '开通会员查看' }}</span></div>
           </div>
         </div>
       </div>
@@ -120,8 +121,12 @@
     </div>
 
     <!-- 后续卡片轻量提示 -->
-    <div v-if="!showAnalysis && !isAnalysisPending && !isFirst" class="mc-upgrade-hint">
-      <span>—</span>
+    <div v-if="!showAnalysis && !isAnalysisPending && !isFirst" class="mc-upgrade-hint" @click="$emit('upgrade')">
+      <svg class="mc-hint-lock" viewBox="0 0 24 24" fill="none">
+        <rect x="5" y="11" width="14" height="9" rx="2" stroke="currentColor" stroke-width="1.8"/>
+        <path d="M8 11V8a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
+      <span>开通会员解锁完整分析</span>
     </div>
   </div>
 </template>
@@ -134,9 +139,10 @@ const props = defineProps({
   showAnalysis: { type: Boolean, default: false },
   isAnalysisPending: { type: Boolean, default: false },
   reviewMode: { type: Boolean, default: false },
-  isTrial: { type: Boolean, default: false },
   isFirst: { type: Boolean, default: false }
 })
+
+defineEmits(['upgrade'])
 
 const title = computed(() => props.recommendation.title || '')
 const sportName = computed(() => ({
@@ -149,7 +155,6 @@ const isConfirmed = computed(() => props.recommendation.is_confirmed)
 const singleMatches = computed(() => props.recommendation.prediction_data?.single_matches || [])
 const parlay = computed(() => props.recommendation.prediction_data?.parlays || props.recommendation.prediction_data?.parlay || null)
 const blurParlay = computed(() => props.recommendation._blur_parlay)
-const hasTrialLocked = computed(() => singleMatches.value.some(m => m.is_trial_locked))
 
 function hitLabel(status) {
   if (status === 'hit') return '好评'
@@ -306,13 +311,20 @@ function confidenceClass(rate) {
   border-radius: var(--radius); border-left: 4px solid var(--primary);
 }
 .mc-summary-icon { font-size: 15px; flex-shrink: 0; margin-top: 2px; }
-.mc-summary-text { font-size: 13px; color: #475569; line-height: 1.7; }
+.mc-summary-text { font-size: 13px; color: #475569; line-height: 1.7; white-space: pre-line; }
 
 /* ========== LOCKED ========== */
 .mc-locked { display: flex; align-items: center; justify-content: center; padding: 10px 0 2px; }
 .mc-locked-text { font-size: 14px; color: #cbd5e1; font-weight: 500; }
 .mc-locked.mc-pending .mc-locked-text { color: #10b981; font-weight: 600; }
-.mc-locked.mc-trial-locked .mc-locked-text { color: #f59e0b; font-weight: 600; }
+/* 会员引导锁态 */
+.mc-locked.mc-member {
+  gap: 8px; padding: 16px 0 6px; cursor: pointer;
+  border-radius: 10px; transition: background 0.15s;
+}
+.mc-locked.mc-member:hover { background: var(--primary-light); }
+.mc-locked.mc-member .mc-locked-text { color: var(--primary); font-weight: 600; }
+.mc-lock-icon { width: 18px; height: 18px; color: var(--primary); flex-shrink: 0; }
 
 .mc-pending-bar {
   display: flex; align-items: center; justify-content: center;
@@ -324,10 +336,13 @@ function confidenceClass(rate) {
 .mc-pending-hint { margin-top: 16px; text-align: center; font-size: 12px; color: #10b981; font-weight: 500; }
 
 .mc-upgrade-hint {
-  display: flex; align-items: center; justify-content: center;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
   padding: 14px 0 4px; border-top: 1px solid var(--border-light); margin-top: 8px;
-  font-size: 18px; color: var(--muted);
+  font-size: 13px; color: var(--primary); font-weight: 600; cursor: pointer;
+  transition: opacity 0.15s;
 }
+.mc-upgrade-hint:hover { opacity: 0.75; }
+.mc-hint-lock { width: 16px; height: 16px; flex-shrink: 0; }
 
 /* ========== PARLAY ========== */
 .parlay-section {
@@ -344,8 +359,9 @@ function confidenceClass(rate) {
 .parlay-locked {
   background: linear-gradient(135deg, #fffdf5, #fffbeb);
   border: 1px solid #fde68a; border-left: 5px solid #f59e0b;
-  border-radius: 12px; padding: 16px;
+  border-radius: 12px; padding: 16px; cursor: pointer;
 }
+.parlay-locked:hover { opacity: 0.85; }
 .parlay-locked-header { display: flex; flex-direction: column; align-items: center; gap: 8px; }
 .parlay-locked-title { font-size: 14px; font-weight: 600; color: #b45309; }
 .parlay-locked-badge { padding: 4px 12px; background: #fef3c7; border-radius: 6px; border: 1px solid #fde68a; }

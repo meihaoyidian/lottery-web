@@ -2,6 +2,7 @@
 昨日战绩相关API端点
 """
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime
@@ -109,9 +110,12 @@ async def create_achievement(
     ).first()
 
     if existing:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"日期 {achievement_data.date} 的战绩已存在，请使用更新接口"
+        return JSONResponse(
+            status_code=409,
+            content={
+                "detail": f"日期 {achievement_data.date} 的战绩已存在，是否编辑已有记录？",
+                "existing_id": existing.id
+            }
         )
 
     # 计算准确率

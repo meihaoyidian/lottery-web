@@ -1,7 +1,7 @@
 """
 推荐模型
 """
-from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, ForeignKey, JSON, func
+from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, JSON, func
 from sqlalchemy.orm import relationship
 from app.database import Base
 import enum
@@ -19,7 +19,7 @@ class Recommendation(Base):
     __tablename__ = "recommendations"
 
     id = Column(Integer, primary_key=True, index=True, comment="推荐ID")
-    created_by_id = Column(Integer, ForeignKey("users.id", ondelete="RESTRICT"), nullable=False, comment="创建管理员ID")
+    created_by_id = Column(Integer, nullable=False, index=True, comment="创建管理员ID（逻辑引用 user_web.id）")
     prediction_type = Column(String(20), nullable=False, index=True, comment="预测类型")
     title = Column(String(50), nullable=False, comment="推荐标题")
     promotion_title = Column(String(100), nullable=True, comment="推广标题（选填，用于分享和推广展示）")
@@ -44,8 +44,13 @@ class Recommendation(Base):
         comment="更新时间"
     )
 
-    # Relationships
-    created_by = relationship("User", foreign_keys=[created_by_id])
+    # Relationships（逻辑关联 user_web，无 DB 级外键约束）
+    created_by = relationship(
+        "User",
+        primaryjoin="Recommendation.created_by_id == User.id",
+        foreign_keys=[created_by_id],
+        viewonly=True,
+    )
 
     def __repr__(self):
         return f"<Recommendation(id={self.id}, prediction_type={self.prediction_type}, status={self.status})>"

@@ -16,6 +16,9 @@ const api = {
   updateNickname(nickname) {
     return http.put('/users/me/nickname', { nickname }).then(r => r.data)
   },
+  changePassword(new_password) {
+    return http.post('/users/change-password', { new_password }).then(r => r.data)
+  },
 
   // ===== 推荐列表 =====
   getRecommendations(params) {
@@ -64,8 +67,11 @@ const api = {
   },
 
   // ===== 昨日战绩 =====
-  getLatestAchievement() {
-    return http.get('/daily-achievements/latest').then(r => r.data)
+  getLatestAchievement(params) {
+    return http.get('/daily-achievements/latest', { params }).then(r => r.data)
+  },
+  getAchievements(params) {
+    return http.get('/daily-achievements', { params }).then(r => r.data)
   },
   getAchievement(id) {
     return http.get(`/daily-achievements/${id}`).then(r => r.data)

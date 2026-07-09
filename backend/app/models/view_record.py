@@ -13,9 +13,9 @@ class ViewRecord(Base):
     id = Column(Integer, primary_key=True, index=True, comment="记录ID")
     user_id = Column(
         Integer,
-        ForeignKey("users.id", ondelete="SET NULL"),
         nullable=True,
-        comment="浏览用户ID（游客为NULL）"
+        index=True,
+        comment="浏览用户ID（游客为NULL，逻辑引用 user_web.id）"
     )
     recommendation_id = Column(
         Integer,
@@ -31,8 +31,13 @@ class ViewRecord(Base):
         comment="浏览时间（UTC）"
     )
 
-    # Relationships
-    user = relationship("User", foreign_keys=[user_id])
+    # Relationships（user 逻辑关联 user_web，无 DB 级外键约束）
+    user = relationship(
+        "User",
+        primaryjoin="ViewRecord.user_id == User.id",
+        foreign_keys=[user_id],
+        viewonly=True,
+    )
     recommendation = relationship("Recommendation", foreign_keys=[recommendation_id])
 
     # 复合索引：按推荐ID查询浏览记录时提高性能

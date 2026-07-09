@@ -106,9 +106,7 @@ class ViewRecordService:
                 User.nickname.label('user_nickname'),
                 User.created_at.label('user_created_at'),
                 User.role.label('user_role'),
-                User.is_paid.label('user_is_paid'),
-                User.is_trial_user.label('user_is_trial'),
-                User.is_key_match_member.label('user_is_key_match_member')
+                User.is_paid.label('user_is_paid')
             ).join(
                 User,
                 subquery.c.user_id == User.id
@@ -133,9 +131,7 @@ class ViewRecordService:
                     'last_viewed_at': r.last_viewed_at,
                     'first_viewed_at': r.first_viewed_at,
                     'user_role': r.user_role,
-                    'user_is_paid': r.user_is_paid,
-                    'user_is_trial': r.user_is_trial,
-                    'user_is_key_match_member': r.user_is_key_match_member
+                    'user_is_paid': r.user_is_paid
                 }
                 for r in records
             ]

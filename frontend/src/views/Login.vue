@@ -85,7 +85,7 @@
           <input
             v-model="password"
             :type="showPwd ? 'text' : 'password'"
-            placeholder="输入密码"
+            :placeholder="mode === 'register' ? '6-20位，含字母和数字' : '输入密码'"
             maxlength="20"
             class="login-input"
           />
@@ -109,7 +109,7 @@
 
         <p v-if="error" class="login-error">{{ error }}</p>
         <p class="login-hint">
-          {{ mode === 'register' ? '注册即赠送 1 天 AI 体验会员' : '新用户点击上方「注册」创建账号' }}
+          {{ mode === 'register' ? '注册即可开启 AI 赛事智能分析' : '登录即可开启 AI 赛事智能分析' }}
         </p>
       </form>
     </div>
@@ -142,7 +142,9 @@ function switchMode(m) {
 
 function validate() {
   if (!/^1[3-9]\d{9}$/.test(phone.value)) return '请输入正确的11位手机号'
-  if (password.value.length < 6 || password.value.length > 10) return '密码长度为6-10位'
+  if (password.value.length < 6 || password.value.length > 20) return '密码长度为 6-20 位'
+  // 与后端规则一致：必须同时包含字母和数字
+  if (!/[a-zA-Z]/.test(password.value) || !/\d/.test(password.value)) return '密码需同时包含字母和数字'
   if (mode.value === 'register' && password.value !== confirmPassword.value) return '两次密码输入不一致'
   return ''
 }
@@ -163,11 +165,17 @@ async function handleSubmit() {
     auth.setAuth(res.access_token, {
       ...res.user,
       isPaid: res.user.is_paid,
-      isTrial: res.user.is_trial_user,
       role: res.user.role
     })
     router.push(route.query.redirect || '/')
   } catch (e) {
+    // 手机号未注册 → 自动切到注册页，保留手机号，清掉错误提示
+    if (e.message?.includes('未注册') || e.statusCode === 404) {
+      mode.value = 'register'
+      confirmPassword.value = ''
+      error.value = ''
+      return
+    }
     error.value = e.message || (mode.value === 'login' ? '登录失败' : '注册失败')
   } finally {
     loading.value = false

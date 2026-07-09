@@ -45,6 +45,9 @@
                 <span v-if="m.total_points" class="mr-pred">{{ m.total_points }}</span>
                 <span v-if="m.handicap" class="mr-pred">{{ m.handicap }}</span>
               </div>
+              <div v-if="m.prediction_basis" class="mr-basis">
+                <span class="mr-basis-text">{{ m.prediction_basis }}</span>
+              </div>
             </div>
           </div>
 
@@ -150,7 +153,7 @@ async function submitResult() {
   }catch(e){ alert(e.message) }finally{ submitting.value=false }
 }
 
-async function openViewers(r) { showViewers.value=true; vTitle.value=r.title; try { const res=await api.getViewRecords(r.id); viewers.value=(res.records||[]).map(x=>({...x,_roleLabel:x.user_role==='admin'?'管理员':x.user_is_paid?'完整版':x.user_is_trial?'体验版':'基础版',_roleClass:x.user_role==='admin'?'va':x.user_is_paid?'vp':x.user_is_trial?'vt':'vf'})); vTotal.value=res.total; vUnique.value=res.unique_viewers }catch{} }
+async function openViewers(r) { showViewers.value=true; vTitle.value=r.title; try { const res=await api.getViewRecords(r.id); viewers.value=(res.records||[]).map(x=>({...x,_roleLabel:x.user_role==='admin'?'管理员':x.user_is_paid?'会员':'非会员',_roleClass:x.user_role==='admin'?'va':x.user_is_paid?'vp':'vf'})); vTotal.value=res.total; vUnique.value=res.unique_viewers }catch{} }
 
 async function toggleMatch(r, mi) {
   const m = r.prediction_data.single_matches[mi]
@@ -223,6 +226,8 @@ loadRecs()
 .mr-vs { font-size:14px; font-weight:600; display:block; margin-bottom:4px; color:var(--text); }
 .mr-preds { display:flex; gap:8px; flex-wrap:wrap; }
 .mr-pred { font-size:12px; font-weight:600; color:#D97706; background:#FEF3C7; padding:3px 12px; border-radius:8px; }
+.mr-basis { margin-top:8px; padding:10px 12px; background:var(--bg); border-radius:8px; border-left:3px solid var(--primary); }
+.mr-basis-text { font-size:12px; color:var(--text-secondary); line-height:1.6; white-space:pre-line; }
 .parlay-row { font-size:13px; padding:8px 12px; background:#fff; border-radius:6px; margin-bottom:4px; border:1px solid var(--border-light); }
 .parlay-row:last-child { margin-bottom:0; }
 .actions { display:flex; flex-direction:column; gap:8px; margin-top:8px; }

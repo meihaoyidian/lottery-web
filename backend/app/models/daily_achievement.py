@@ -1,7 +1,7 @@
 """
 昨日战绩模型
 """
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, Date, DECIMAL, JSON, ForeignKey, func
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, Date, DECIMAL, JSON, func
 from app.database import Base
 
 
@@ -20,7 +20,7 @@ class DailyAchievement(Base):
     description = Column(String(2000), nullable=True, comment="详细描述，最多2000字")
     banner_image = Column(String(500), nullable=True, comment="banner图片URL（可选）")
     is_active = Column(Boolean, nullable=False, server_default="1", comment="是否显示")
-    created_by_id = Column(Integer, ForeignKey("users.id"), nullable=False, comment="创建者ID")
+    created_by_id = Column(Integer, nullable=False, comment="创建者ID（逻辑引用 user_web.id）")
     created_at = Column(
         DateTime,
         server_default=func.now(),

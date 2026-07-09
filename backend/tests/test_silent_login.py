@@ -27,8 +27,6 @@ def make_user(id=1, phone="13800000001", openid=None, token_version=0):
     user.phone = phone
     user.openid = openid
     user.token_version = token_version
-    user.is_trial_user = False
-    user.has_used_trial = False
     return user
 
 
