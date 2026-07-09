@@ -2,6 +2,60 @@
 
 > lottery-wxapp（微信小程序）→ lottery-web（浏览器端），后端逻辑和数据库复用。
 
+## 2026-07-10（代码清理 + UI 优化）
+
+### 清理游客/审核模式残留
+
+- `deps.py`：去掉 REVIEW_MODE 和游客模式注释逻辑
+- `config.py`：保留 `REVIEW_MODE=False` 兼容，去掉文档注释
+- `main.py`：`/system/config` 返回空对象
+- `recommendations.py`：去掉审核模式禁止创建逻辑
+- `RecommendationCard.vue`：去掉 `reviewMode` prop
+- `Recommendations.vue`：去掉 `:reviewMode="false"` 传参
+
+---
+
+## 2026-07-10（UI 优化 + 浏览记录 + 推荐管理）
+
+### 全局移动端字号提升
+
+- `global.css` body 字号：移动端 17px
+- History.vue：标题 16px、统计数字 22px、卡片标题 16px
+- Recommendations.vue：状态文字 14px、筛选按钮 15px
+- 底部标签栏：图标 24px、文字 12px
+
+### 场次卡片简化（RecommendationCard.vue）
+
+- 去掉了渐变角标、旋转标签、虚线边框、彩色小圆点等装饰
+- 重心场次：金色左边线 + 浅金底色
+- 精选场次：紫色左边线 + 浅紫底色
+- 与历史战绩卡风格统一
+
+### 浏览记录功能补齐
+
+**前端**
+- `Recommendations.vue`：加载推荐列表时上报 `POST /view-records`（`viewedIds` Set 去重）
+- `ManageRecommendations.vue`：浏览弹窗显示用户列表（手机号/角色/浏览时间）
+- 补全 `formatViewTime` 函数，修复弹窗无数据 bug
+- 弹窗空状态提示
+
+**API**
+- `api/index.js`：新增 `recordView(recommendationId)`
+
+### 推荐管理页优化（ManageRecommendations.vue）
+
+- 筛选按钮居中
+- 场次卡片：左侧色条区分重心/精选、状态切换按钮加边框、对阵+预测居中
+- 卡片 hover 阴影、操作按钮 hover 反馈
+- `formatViewTime` 补全
+
+### 管理后台全局
+
+- 三页（推荐管理/用户管理/战绩Banner）统一"← 返回"按钮回个人中心
+- 路由 `/admin/achievements/edit/:id?` 支持创建和编辑两种模式
+
+---
+
 ## 2026-07-09（会员体系重构 + 部署）
 
 ### 用户体系：独立 user_web 表

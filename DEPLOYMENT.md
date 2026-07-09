@@ -47,6 +47,7 @@ npm run build                   # 或 pnpm run build
 
 # ② 上传到服务器（提示输入服务器密码）
 scp -r dist root@62.234.160.215:/root/codes/lottery-web/frontend/
+Love112728!chen
 
 # ③ 服务器上重设权限（有新文件时必做，否则 nginx 403）
 ssh root@62.234.160.215 "chmod -R o+rX /root/codes/lottery-web/frontend/dist"

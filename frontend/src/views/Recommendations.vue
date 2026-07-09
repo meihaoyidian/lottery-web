@@ -106,7 +106,6 @@
           :recommendation="rec"
           :showAnalysis="rec.showAnalysis"
           :isAnalysisPending="rec.isAnalysisPending"
-          :reviewMode="false"
           :isFirst="index === 0"
           @upgrade="openUpgrade"
         />
@@ -136,6 +135,7 @@ const router = useRouter()
 const loading = ref(true)
 const loadingMore = ref(false)
 const recommendations = ref([])
+const viewedIds = new Set()
 const latestAchievement = ref(null)
 const page = ref(1)
 const pageSize = 20
@@ -208,6 +208,8 @@ async function loadRecommendations(isLoadMore = false) {
     recommendations.value = isLoadMore ? [...recommendations.value, ...processed] : processed
     page.value = p
     hasMore.value = p < res.total_pages
+    // 记录浏览（异步，去重）
+    processed.forEach(r => { if (!viewedIds.has(r.id)) { viewedIds.add(r.id); api.recordView(r.id).catch(()=>{}) } })
   } catch (e) {
     console.error('加载推荐失败:', e)
   } finally {
@@ -669,12 +671,13 @@ onUnmounted(() => {
 
 @media (max-width: 767px) {
   .status-bar { padding: 12px 14px; gap: 10px; }
-  .status-text { font-size: 13px; }
-  /* 移动端切换为精简文案，避免溢出 */
+  .status-text { font-size: 14px; }
   .status-text-full { display: none; }
   .status-text-short { display: inline; }
-  .status-tag { padding: 4px 11px; font-size: 11px; }
-  .filter-btn { padding: 8px 20px; font-size: 13px; }
+  .status-tag { padding: 5px 12px; font-size: 12px; }
+  .filter-btn { padding: 10px 22px; font-size: 15px; min-height:40px; }
+  .empty-title { font-size: 17px; }
+  .empty-desc { font-size: 15px; }
 }
 
 </style>

@@ -353,13 +353,6 @@ async def create_recommendation(
     logger.debug(f"prediction_data 类型: {type(recommendation_data.prediction_data)}")
     logger.debug(f"prediction_data 内容: {json.dumps(recommendation_data.prediction_data, ensure_ascii=False, indent=2)}")
 
-    # 审核模式：禁止创建推荐
-    if settings.REVIEW_MODE:
-        logger.info("审核模式开启，禁止创建推荐")
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="无法创建推荐"
-        )
 
     try:
         recommendation = RecommendationService.create_recommendation(

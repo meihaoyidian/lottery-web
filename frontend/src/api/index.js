@@ -48,6 +48,9 @@ const api = {
   markResult(id, data) {
     return http.post(`/recommendations/${id}/complete`, data).then(r => r.data)
   },
+  recordView(recommendationId) {
+    return http.post('/view-records', { recommendation_id: recommendationId }).then(r => r.data)
+  },
   getViewRecords(id, params) {
     return http.get(`/view-records/recommendation/${id}`, { params }).then(r => r.data)
   },

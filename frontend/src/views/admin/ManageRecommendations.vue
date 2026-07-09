@@ -97,10 +97,14 @@
         <h3>浏览记录</h3>
         <p class="msub">{{ vTitle }}</p>
         <div class="vstats"><span>总浏览 {{ vTotal }}</span><span>用户 {{ vUnique }}</span></div>
-        <div class="vlist"><div v-for="v in viewers" :key="v.user_phone+v.last_viewed_at" class="vi">
-          <span class="vi-phone">{{ v.user_phone }}</span><span :class="['vi-role',v._roleClass]">{{ v._roleLabel }}</span>
-          <span class="vi-time">{{ v.last_viewed_at }}</span>
-        </div></div>
+        <div class="vlist">
+          <p v-if="!viewers.length" style="text-align:center;padding:20px;color:var(--muted)">暂无数据</p>
+          <div v-for="(v,i) in viewers" :key="i" class="vi">
+            <span class="vi-phone">{{ v.user_phone }}</span>
+            <span :class="['vi-role',v._roleClass]">{{ v._roleLabel }}</span>
+            <span class="vi-time">{{ v._viewedAt || v.last_viewed_at }}</span>
+          </div>
+        </div>
         <button class="mcancel" @click="showViewers=false">关闭</button>
       </div>
     </div>
@@ -123,6 +127,7 @@ const viewers = ref([]), vTitle = ref(''), vTotal = ref(0), vUnique = ref(0)
 function cardClass(r) { return [r.is_confirmed?'is-ok':'',r.hasKeyMatch?'is-km':'',r.actual_outcome?.hit_status?'ot-'+r.actual_outcome.hit_status:''] }
 function outcomeLabel(s) { return { hit:'好评', miss:'蓄力', partial:'部分好评', push:'走水' }[s]||s }
 function fmt(d) { if(!d) return ''; const t=new Date(d); return `${t.getMonth()+1}-${t.getDate()} ${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}` }
+function formatViewTime(d) { if(!d) return ''; const t=new Date(d); return `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')} ${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}` }
 function msLabel(s) { return !s||s==='pending'?'待定':s==='hit'?'中':s==='push'?'走':'错' }
 function msClass(s) { return !s||s==='pending'?'ms-pen':s==='hit'?'ms-hit':s==='push'?'ms-push':'ms-miss' }
 
@@ -153,7 +158,19 @@ async function submitResult() {
   }catch(e){ alert(e.message) }finally{ submitting.value=false }
 }
 
-async function openViewers(r) { showViewers.value=true; vTitle.value=r.title; try { const res=await api.getViewRecords(r.id); viewers.value=(res.records||[]).map(x=>({...x,_roleLabel:x.user_role==='admin'?'管理员':x.user_is_paid?'会员':'非会员',_roleClass:x.user_role==='admin'?'va':x.user_is_paid?'vp':'vf'})); vTotal.value=res.total; vUnique.value=res.unique_viewers }catch{} }
+async function openViewers(r) {
+  showViewers.value=true; vTitle.value=r.title; viewers.value=[]; vTotal.value=0; vUnique.value=0;
+  try {
+    const res = await api.getViewRecords(r.id)
+    viewers.value = (res.records||[]).map(x => ({
+      ...x,
+      _roleLabel: x.user_role==='admin'?'管理员':x.user_role==='guest'?'游客':x.user_is_paid?'会员':'非会员',
+      _roleClass: x.user_role==='admin'?'va':x.user_role==='guest'?'vg':x.user_is_paid?'vp':'vf',
+      _viewedAt: x.last_viewed_at ? formatViewTime(x.last_viewed_at) : ''
+    }))
+    vTotal.value = res.total; vUnique.value = res.unique_viewers
+  } catch(e) { alert('加载浏览记录失败: ' + (e.message||'')) }
+}
 
 async function toggleMatch(r, mi) {
   const m = r.prediction_data.single_matches[mi]
@@ -178,7 +195,7 @@ loadRecs()
 .back-btn:hover { color:var(--primary); border-color:var(--primary); }
 .create-btn { padding:10px 24px; background:var(--primary); color:#fff; border-radius:20px; font-size:14px; font-weight:600; flex-shrink:0; box-shadow:0 2px 8px rgba(99,102,241,0.25); }
 .create-btn:hover { opacity:0.9; transform:translateY(-1px); }
-.filter-row { display:flex; gap:10px; margin-bottom:18px; }
+.filter-row { display:flex; gap:10px; margin-bottom:18px; justify-content:center; }
 .fbtn { padding:9px 22px; border-radius:20px; font-size:14px; font-weight:500; background:var(--surface); border:1px solid var(--border); color:var(--text-secondary); cursor:pointer; transition:all .15s; }
 .fbtn:hover { border-color:var(--primary); color:var(--primary); }
 .fbtn.on { background:var(--primary); color:#fff; border-color:var(--primary); font-weight:600; }
@@ -209,25 +226,28 @@ loadRecs()
 .ot-partial { background:#FFFBEB; color:#D97706; border-left:3px solid var(--warning); }
 .ot-push { background:#F5F3FF; color:#7C3AED; border-left:3px solid #8B5CF6; }
 .title { font-size:15px; font-weight:700; margin-bottom:10px; line-height:1.5; color:var(--text); }
-.preview { background:var(--bg); border-radius:8px; padding:12px 16px; margin-bottom:10px; border:1px solid var(--border-light); }
-.pv-label { font-size:11px; font-weight:600; color:var(--muted); margin-bottom:8px; }
-.match-row { background:#fff; border-radius:8px; padding:12px 14px; margin-bottom:8px; border:1px solid var(--border-light); }
+.preview { background:var(--bg); border-radius:10px; padding:14px 16px; margin-bottom:10px; border:1px solid var(--border-light); }
+.pv-label { font-size:11px; font-weight:600; color:var(--muted); margin-bottom:10px; letter-spacing:0.03em; }
+.match-row { background:#fff; border-radius:8px; padding:14px 14px; margin-bottom:8px; border:1px solid var(--border-light); position:relative; }
+.match-row::before { content:''; position:absolute; left:0; top:10px; bottom:10px; width:3px; border-radius:0 2px 2px 0; }
+.match-row:has(.mr-km)::before { background:#F59E0B; }
+.match-row:has(.mr-ft)::before { background:#8B5CF6; }
 .match-row:last-child { margin-bottom:0; }
-.mr-top { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
-.mr-id { font-size:11px; color:var(--muted); }
+.mr-top { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+.mr-id { font-size:11px; font-weight:600; color:var(--muted); }
 .mr-tag { font-size:10px; font-weight:600; padding:2px 8px; border-radius:4px; }
 .mr-km { color:#B45309; background:#FFFDF5; border:1px solid #FDE68A; }
-.mr-ft { color:#7C3AED; background:#FAF8FF; }
-.mr-toggle { margin-left:auto; font-size:12px; font-weight:700; padding:5px 16px; border-radius:8px; min-width:56px; text-align:center; cursor:pointer; }
-.ms-pen { background:#F3F4F6; color:#9CA3AF; border:1px solid #E5E7EB; }
-.ms-hit { background:#D1FAE5; color:#065F46; }
-.ms-push { background:#E0E7FF; color:#4338CA; }
-.ms-miss { background:#FEE2E2; color:#991B1B; }
-.mr-vs { font-size:14px; font-weight:600; display:block; margin-bottom:4px; color:var(--text); }
-.mr-preds { display:flex; gap:8px; flex-wrap:wrap; }
-.mr-pred { font-size:12px; font-weight:600; color:#D97706; background:#FEF3C7; padding:3px 12px; border-radius:8px; }
-.mr-basis { margin-top:8px; padding:10px 12px; background:var(--bg); border-radius:8px; border-left:3px solid var(--primary); }
-.mr-basis-text { font-size:12px; color:var(--text-secondary); line-height:1.6; white-space:pre-line; }
+.mr-ft { color:#6D28D9; background:#FAFAFE; border:1px solid #DDD6FE; }
+.mr-toggle { margin-left:auto; font-size:12px; font-weight:700; padding:5px 14px; border-radius:8px; min-width:50px; text-align:center; cursor:pointer; border:1px solid; transition:all .1s; }
+.ms-pen { background:#F8FAFC; color:#94A3B8; border-color:#E2E8F0; }
+.ms-hit { background:#D1FAE5; color:#065F46; border-color:#A7F3D0; }
+.ms-push { background:#E0E7FF; color:#4338CA; border-color:#C7D2FE; }
+.ms-miss { background:#FEE2E2; color:#991B1B; border-color:#FECACA; }
+.mr-vs { font-size:14px; font-weight:600; display:block; margin-bottom:6px; color:var(--text); text-align:center; }
+.mr-preds { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; }
+.mr-pred { font-size:12px; font-weight:600; color:#B45309; background:#FFFBEB; padding:3px 12px; border-radius:6px; border:1px solid #FDE68A; }
+.mr-basis { margin-top:8px; padding:10px 12px; background:var(--bg); border-radius:6px; border-left:3px solid var(--primary); }
+.mr-basis-text { font-size:13px; color:var(--text-secondary); line-height:1.6; white-space:pre-line; }
 .parlay-row { font-size:13px; padding:8px 12px; background:#fff; border-radius:6px; margin-bottom:4px; border:1px solid var(--border-light); }
 .parlay-row:last-child { margin-bottom:0; }
 .actions { display:flex; flex-direction:column; gap:8px; margin-top:8px; }
@@ -260,7 +280,7 @@ loadRecs()
 .vi { display:flex; align-items:center; gap:12px; padding:8px 0; border-bottom:1px solid var(--border-light); font-size:13px; }
 .vi-phone { flex:1; font-weight:500; }
 .vi-role { font-size:10px; padding:2px 8px; border-radius:6px; font-weight:600; }
-.va { background:#EEF2FF; color:var(--primary); } .vp { background:#FEF3C7; color:#B45309; } .vt { background:#ECFDF5; color:var(--success); } .vf { background:var(--bg); color:var(--muted); }
+.va { background:#EEF2FF; color:var(--primary); } .vg { background:#F5F3FF; color:#7C3AED; } .vp { background:#FEF3C7; color:#B45309; } .vt { background:#ECFDF5; color:var(--success); } .vf { background:var(--bg); color:var(--muted); }
 .vi-time { font-size:12px; color:var(--muted); }
 
 @media (max-width:767px) {

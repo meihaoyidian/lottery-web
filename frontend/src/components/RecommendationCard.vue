@@ -1,7 +1,7 @@
 <template>
   <div class="card" :class="{ 'key-match-card': hasKeyMatch }">
     <!-- 角标 -->
-    <div v-if="totalMatchesCount >= 2 && !reviewMode" class="corner corner-multi">
+    <div v-if="totalMatchesCount >= 2" class="corner corner-multi">
       <span>精选合集</span>
     </div>
     <div v-if="hasKeyMatch" class="corner corner-key">
@@ -138,7 +138,6 @@ const props = defineProps({
   recommendation: { type: Object, required: true },
   showAnalysis: { type: Boolean, default: false },
   isAnalysisPending: { type: Boolean, default: false },
-  reviewMode: { type: Boolean, default: false },
   isFirst: { type: Boolean, default: false }
 })
 
@@ -170,200 +169,89 @@ function confidenceClass(rate) {
 </script>
 
 <style scoped>
-/* ========== CARD ========== */
-.card {
-  background: var(--surface); border-radius: var(--radius-lg); padding: 24px; margin-bottom: 16px;
-  border: 1px solid var(--border); position: relative; overflow: hidden;
-  box-shadow: var(--shadow);
-}
-.key-match-card {
-  border: 2px solid #FBBF24; box-shadow: 0 4px 16px rgba(245,158,11,0.10);
-}
-@media (max-width: 767px) {
-  .card { padding: 18px 16px; border-radius: var(--radius); }
-}
+.card { background:var(--surface); border-radius:var(--radius-lg); padding:22px 24px; margin-bottom:14px; border:1px solid var(--border); box-shadow:var(--shadow-sm); position:relative; overflow:hidden; }
+.key-match-card { border-color:#FDE68A; }
+@media (max-width:767px) { .card { padding:18px 16px; border-radius:var(--radius); } }
 
-/* ========== CORNER ========== */
-.corner {
-  position: absolute; top: 0; left: 50%; transform: translateX(-50%);
-  padding: 6px 24px; border-radius: 0 0 12px 12px; z-index: 1;
-  font-size: 12px; font-weight: 600; color: #fff; letter-spacing: 0.5px;
-}
-.corner-multi { background: linear-gradient(135deg, #6366F1, #7C3AED); }
-.corner-key { background: linear-gradient(135deg, #f59e0b, #e8870a); }
+/* 重心场次左边金色条 */
+.key-match-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:4px; background:#F59E0B; }
 
-/* ========== HEADER ========== */
-.card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-.sport-badge { display: flex; align-items: center; padding: 8px 20px; border-radius: 20px; font-size: 14px; font-weight: 500; }
-.sport-badge.football { background: #e0f7fa; color: #0288d1; }
-.sport-badge.basketball { background: #fff3e0; color: #e65100; }
+.corner { position:absolute; top:0; left:50%; transform:translateX(-50%); padding:4px 20px; border-radius:0 0 8px 8px; font-size:11px; font-weight:600; color:#fff; z-index:1; }
+.corner-multi { background:#6366F1; }
+.corner-key { background:#F59E0B; }
 
-.card-title-section { margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px solid var(--border-light); }
-.card-title { font-size: 17px; font-weight: 700; color: var(--text); line-height: 1.5; display: block; }
+.card-header { margin-bottom:12px; }
+.sport-badge { display:inline-flex; padding:5px 14px; border-radius:20px; font-size:12px; font-weight:600; }
+.sport-badge.football { background:#E0F7FA; color:#0288D1; }
+.sport-badge.basketball { background:#FFF3E0; color:#E65100; }
 
-/* ========== ANALYSIS ========== */
-.analysis-section { background: var(--bg); border-radius: var(--radius); padding: 20px; border: 1px solid var(--border); }
-.single-matches { display: flex; flex-direction: column; gap: 14px; }
+.card-title-section { margin-bottom:14px; padding-bottom:12px; border-bottom:1px solid var(--border-light); }
+.card-title { font-size:16px; font-weight:700; color:var(--text); line-height:1.5; display:block; }
 
-/* ========== MATCH CARD ========== */
-.match-card {
-  background: #fff; border-radius: var(--radius); padding: 20px 22px;
-  border: 1px solid var(--border); position: relative;
-  box-shadow: var(--shadow-sm);
-}
-@media (max-width: 767px) {
-  .match-card { padding: 16px 14px; }
-}
-.match-card::before {
-  content: ''; position: absolute; left: 0; top: 16px; bottom: 16px;
-  width: 6px; border-radius: 0 3px 3px 0;
-}
-.match-card.mc-key { border: 2px solid #fde68a; background: #fffdf5; box-shadow: 0 4px 12px rgba(245,158,11,0.12); }
-.match-card.mc-key::before { background: #f59e0b; }
-.match-card.mc-featured { border: 2px solid #DDD6FE; background: #FAFAFE; box-shadow: 0 4px 12px rgba(99,102,241,0.08); }
-.match-card.mc-featured::before { background: #8B5CF6; }
-.match-card.mc-confirmed { padding-top: 44px; }
+.analysis-section { background:var(--bg); border-radius:var(--radius); padding:18px; border:1px solid var(--border-light); }
+.single-matches { display:flex; flex-direction:column; gap:12px; }
 
-.mc-confirmed-badge {
-  position: absolute; top: 0; left: 0;
-  background: linear-gradient(135deg, #0d9488, #0f766e); color: #fff;
-  font-size: 11px; font-weight: 600; padding: 6px 20px;
-  border-radius: 0 0 10px 0; z-index: 2;
-}
+/* 场次卡片 -- 和历史战绩页统一风格 */
+.match-card { background:#fff; border-radius:var(--radius-sm); padding:16px 18px; border:1px solid var(--border-light); position:relative; }
+.match-card::before { content:''; position:absolute; left:0; top:12px; bottom:12px; width:4px; border-radius:0 2px 2px 0; }
+.match-card.mc-key { border-color:#FDE68A; background:#FFFDF5; }
+.match-card.mc-key::before { background:#F59E0B; }
+.match-card.mc-featured { border-color:#DDD6FE; background:#FAFAFE; }
+.match-card.mc-featured::before { background:#8B5CF6; }
+@media (max-width:767px) { .match-card { padding:14px 14px; } }
 
-/* ========== MC HEADER ========== */
-.mc-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 18px; min-height: 36px; }
-.mc-header-left { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; flex: 1; }
-.mc-id { font-size: 11px; font-weight: 500; color: #94a3b8; margin-right: 6px; }
+.mc-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:6px; }
+.mc-header-left { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.mc-id { font-size:11px; font-weight:600; color:var(--muted); }
+.mc-tag { font-size:10px; font-weight:600; padding:2px 8px; border-radius:4px; }
+.mc-tag-key { color:#B45309; background:#FFFDF5; border:1px solid #FDE68A; }
+.mc-tag-featured { color:#6D28D9; background:#FAFAFE; border:1px solid #DDD6FE; }
+.mc-tag-public { color:#059669; background:#ECFDF5; }
+.mc-tag-upset { color:#DC2626; background:#FEF2F2; }
+.mc-tag-result { font-size:10px; font-weight:700; padding:2px 8px; border-radius:10px; color:#fff; }
+.mc-result-hit { background:#10B981; }
+.mc-result-push { background:#8B5CF6; }
+.mc-result-miss { background:#E2E8F0; color:#94A3B8; }
+.mc-tag-confidence { font-size:10px; font-weight:600; padding:2px 8px; border-radius:4px; }
+.rate-high { color:#059669; background:#ECFDF5; }
+.rate-normal { color:#4F46E5; background:#EEF2FF; }
+.rate-cold { color:#DC2626; background:#FEF2F2; }
 
-.mc-tag { font-size: 10px; font-weight: 600; padding: 4px 12px; border-radius: 6px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
-.mc-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; display: inline-block; }
-.mc-tag-key { color: #e8870a; background: #fffdf5; border: 1px solid #fde68a; }
-.mc-tag-key .mc-dot { background: #f59e0b; }
-.mc-tag-featured { color: #6D28D9; background: #FAFAFE; border: 1px solid #DDD6FE; }
-.mc-tag-featured .mc-dot { background: #8B5CF6; }
-.mc-tag-public { color: #059669; background: #ECFDF5; border: 1px solid #a7f3d0; }
-.mc-tag-upset { color: #dc2626; background: #fef2f2; border: 1px solid #fecaca; }
-.mc-tag-upset .mc-dot { background: #ef4444; }
+.mc-versus { display:flex; align-items:center; justify-content:center; gap:14px; margin-bottom:12px; }
+.mc-team { font-size:16px; font-weight:700; color:var(--text); }
+.mc-vs-divider { font-size:11px; font-weight:600; color:var(--muted); }
+@media (max-width:767px) { .mc-team { font-size:15px; } }
 
-/* Confidence tag */
-.mc-tag-confidence { margin-left: 8px; }
-.mc-tag-confidence.rate-high { color: #059669; background: #ecfdf5; border: 1px solid #a7f3d0; }
-.mc-tag-confidence.rate-high .mc-dot { background: #10b981; }
-.mc-tag-confidence.rate-normal { color: #4F46E5; background: #EEF2FF; border: 1px solid #C7D2FE; }
-.mc-tag-confidence.rate-normal .mc-dot { background: #6366F1; }
-.mc-tag-confidence.rate-cold { color: #dc2626; background: #fef2f2; border: 1px solid #fecaca; }
-.mc-tag-confidence.rate-cold .mc-dot { background: #ef4444; }
+.mc-prediction { text-align:center; margin-bottom:10px; }
+.mc-pred-items { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; }
+.mc-pred-item { font-size:13px; font-weight:600; color:#B45309; background:#FFFBEB; padding:6px 14px; border-radius:6px; border:1px solid #FDE68A; }
 
-/* Result tag */
-.mc-result-hit {
-  color: #fff; font-size: 12px; font-weight: 800;
-  padding: 4px 12px; border-radius: 10px;
-  background: linear-gradient(135deg, #10b981, #059669);
-  box-shadow: 0 3px 10px rgba(5,150,105,0.35);
-  transform: rotate(-3deg); letter-spacing: 1px; position: relative;
-}
-.mc-result-hit::after {
-  content: ''; position: absolute; top: 4px; left: 4px; right: 4px; bottom: 4px;
-  border: 2px dashed rgba(255,255,255,0.3); border-radius: 8px; pointer-events: none;
-}
-.mc-result-push {
-  color: #fff; font-size: 12px; font-weight: 800;
-  padding: 4px 12px; border-radius: 10px;
-  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
-  box-shadow: 0 3px 10px rgba(124,58,237,0.3);
-  transform: rotate(-3deg); letter-spacing: 1px; position: relative;
-}
-.mc-result-push::after {
-  content: ''; position: absolute; top: 4px; left: 4px; right: 4px; bottom: 4px;
-  border: 2px dashed rgba(255,255,255,0.25); border-radius: 8px; pointer-events: none;
-}
-.mc-result-miss {
-  color: #94a3b8; font-size: 11px; font-weight: 500;
-  padding: 4px 12px; border-radius: 8px;
-  background: #f1f5f9; border: 1px dashed #d1d5db;
-  transform: rotate(-3deg); letter-spacing: 1px; opacity: 0.7;
-}
+.mc-summary { padding:12px 14px; background:var(--bg); border-radius:6px; border-left:3px solid var(--primary); }
+.mc-summary-text { font-size:13px; color:var(--text-secondary); line-height:1.6; white-space:pre-line; }
 
-/* ========== VERSUS ========== */
-.mc-versus { display: flex; align-items: center; justify-content: center; gap: 0; margin-bottom: 18px; }
-.mc-team { flex: 1; text-align: center; font-size: 18px; font-weight: 800; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.mc-vs-divider { width: 56px; height: 40px; display: flex; align-items: center; justify-content: center; background: var(--border-light); border-radius: 10px; flex-shrink: 0; }
-.mc-vs-divider span { font-size: 11px; font-weight: 700; color: var(--muted); }
-@media (max-width: 767px) {
-  .mc-team { font-size: 16px; }
-}
+.mc-locked { text-align:center; padding:8px 0; }
+.mc-locked-text { font-size:13px; color:var(--muted); }
+.mc-locked.mc-member { padding:12px 0; cursor:pointer; }
+.mc-locked.mc-member .mc-locked-text { color:var(--primary); font-weight:600; }
+.mc-locked.mc-pending .mc-locked-text { color:#10B981; }
+.mc-lock-icon { width:16px; height:16px; color:var(--primary); vertical-align:middle; margin-right:4px; }
 
-/* ========== PREDICTION ========== */
-.mc-prediction { display: flex; align-items: center; justify-content: center; gap: 16px; padding: 12px 0; margin-bottom: 14px; }
-.mc-pred-items { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; }
-.mc-pred-item {
-  font-size: 14px; font-weight: 700;
-  color: #B45309; background: #FFFBEB;
-  padding: 10px 20px; border-radius: 10px;
-  border: 1px solid #FDE68A;
-}
+.mc-pending-bar { text-align:center; margin-top:14px; padding:10px; background:#ECFDF5; border-radius:8px; font-size:13px; color:#059669; }
+.mc-pending-hint { text-align:center; margin-top:10px; font-size:12px; color:#10B981; }
 
-/* ========== SUMMARY ========== */
-.mc-summary {
-  display: flex; align-items: flex-start; gap: 10px;
-  padding: 16px 18px; background: var(--bg);
-  border-radius: var(--radius); border-left: 4px solid var(--primary);
-}
-.mc-summary-icon { font-size: 15px; flex-shrink: 0; margin-top: 2px; }
-.mc-summary-text { font-size: 13px; color: #475569; line-height: 1.7; white-space: pre-line; }
+.mc-upgrade-hint { display:flex; align-items:center; justify-content:center; gap:6px; padding:12px 0 2px; border-top:1px solid var(--border-light); margin-top:6px; font-size:13px; color:var(--primary); font-weight:600; cursor:pointer; }
+.mc-hint-lock { width:14px; height:14px; flex-shrink:0; }
 
-/* ========== LOCKED ========== */
-.mc-locked { display: flex; align-items: center; justify-content: center; padding: 10px 0 2px; }
-.mc-locked-text { font-size: 14px; color: #cbd5e1; font-weight: 500; }
-.mc-locked.mc-pending .mc-locked-text { color: #10b981; font-weight: 600; }
-/* 会员引导锁态 */
-.mc-locked.mc-member {
-  gap: 8px; padding: 16px 0 6px; cursor: pointer;
-  border-radius: 10px; transition: background 0.15s;
-}
-.mc-locked.mc-member:hover { background: var(--primary-light); }
-.mc-locked.mc-member .mc-locked-text { color: var(--primary); font-weight: 600; }
-.mc-lock-icon { width: 18px; height: 18px; color: var(--primary); flex-shrink: 0; }
+.parlay-section { margin-top:14px; padding:14px; background:#FFFDF5; border-radius:8px; border:1px solid #FDE68A; }
+.parlay-section-title { font-size:12px; font-weight:700; color:#B45309; margin-bottom:8px; text-align:center; }
+.parlay-card { padding:8px 12px; background:#fff; border-radius:6px; border:1px solid #FDE68A; margin-bottom:6px; }
+.parlay-card:last-child { margin-bottom:0; }
+.parlay-card-num { font-size:11px; color:var(--muted); margin-right:6px; }
+.parlay-bets { font-size:14px; font-weight:500; color:var(--text); }
 
-.mc-pending-bar {
-  display: flex; align-items: center; justify-content: center;
-  margin-top: 20px; padding: 14px 24px;
-  background: linear-gradient(135deg, #ecfdf5, #f0fdf4);
-  border: 1px solid #a7f3d0; border-radius: 12px;
-  font-size: 14px; color: #059669; font-weight: 600;
-}
-.mc-pending-hint { margin-top: 16px; text-align: center; font-size: 12px; color: #10b981; font-weight: 500; }
-
-.mc-upgrade-hint {
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  padding: 14px 0 4px; border-top: 1px solid var(--border-light); margin-top: 8px;
-  font-size: 13px; color: var(--primary); font-weight: 600; cursor: pointer;
-  transition: opacity 0.15s;
-}
-.mc-upgrade-hint:hover { opacity: 0.75; }
-.mc-hint-lock { width: 16px; height: 16px; flex-shrink: 0; }
-
-/* ========== PARLAY ========== */
-.parlay-section {
-  margin-top: 20px; padding: 16px;
-  background: #fffdf5; border-radius: 12px;
-  border: 1px solid #fde68a; border-left: 5px solid #f59e0b;
-}
-.parlay-section-title { font-size: 12px; font-weight: 700; color: #d97706; margin-bottom: 10px; text-align: center; }
-.parlay-card { background: #fff; border-radius: 10px; border: 1px solid #eef0f5; margin-bottom: 8px; padding: 14px 16px; }
-.parlay-card:last-child { margin-bottom: 0; }
-.parlay-card-num { font-size: 11px; font-weight: 600; color: #94a3b8; margin-right: 8px; }
-.parlay-bets { font-size: 15px; font-weight: 500; color: #1e293b; line-height: 1.6; text-align: center; display: block; }
-
-.parlay-locked {
-  background: linear-gradient(135deg, #fffdf5, #fffbeb);
-  border: 1px solid #fde68a; border-left: 5px solid #f59e0b;
-  border-radius: 12px; padding: 16px; cursor: pointer;
-}
-.parlay-locked:hover { opacity: 0.85; }
-.parlay-locked-header { display: flex; flex-direction: column; align-items: center; gap: 8px; }
-.parlay-locked-title { font-size: 14px; font-weight: 600; color: #b45309; }
-.parlay-locked-badge { padding: 4px 12px; background: #fef3c7; border-radius: 6px; border: 1px solid #fde68a; }
-.parlay-locked-badge span { font-size: 11px; font-weight: 600; color: #b45309; }
+.parlay-locked { padding:14px; background:#FFFDF5; border-radius:8px; border:1px solid #FDE68A; cursor:pointer; }
+.parlay-locked-header { text-align:center; }
+.parlay-locked-title { font-size:13px; font-weight:600; color:#B45309; }
+.parlay-locked-badge { margin-top:4px; }
+.parlay-locked-badge span { font-size:11px; color:var(--primary); font-weight:600; }
 </style>

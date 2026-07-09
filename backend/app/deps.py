@@ -205,31 +205,16 @@ async def get_current_user_optional(
     db: Session = Depends(get_db)
 ) -> Optional[User]:
     """
-    可选的用户认证（审核模式和游客模式使用）
-
-    在审核模式下，如果未提供 token 则返回 None
-    在正常模式下，如果未提供 token 则返回 None（游客模式）
-    如果提供了 token，则进行正常认证流程
+    可选的用户认证：有 token 则认证，无 token 返回 None
 
     Args:
         credentials: 可选的HTTP认证凭据
         db: 数据库会话
 
     Returns:
-        当前用户对象或 None（审核模式或游客模式下）
-
-    Raises:
-        HTTPException: 如果提供了无效的认证凭据
+        当前用户对象或 None
     """
-    # 审核模式：允许匿名访问
-    if settings.REVIEW_MODE:
-        if credentials is None:
-            logger.info("审核模式：允许匿名访问")
-            return None
-
-    # 游客模式：允许匿名访问（不强制要求认证）
     if credentials is None:
-        logger.info("游客模式：允许匿名访问")
         return None
 
     # 有认证凭据，进行正常认证流程；失败则返回 None（不强制要求登录）

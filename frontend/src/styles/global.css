@@ -56,10 +56,11 @@ body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
-  /* 移动端防止意外横向滚动 */
   overflow-x: hidden;
-  /* 安全区域适配 */
   padding: env(safe-area-inset-top, 0) 0 0 0;
+}
+@media (max-width: 767px) {
+  body { font-size: 17px; }
 }
 
 /* ===== 通用容器 ===== */

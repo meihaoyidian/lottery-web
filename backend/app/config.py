@@ -53,7 +53,6 @@ class Settings(BaseSettings):
     # API基础URL（用于生成分享卡片URL）
     API_BASE_URL: str = "http://localhost:8000"
 
-    # 审核模式开关（提审时开启，返回空白数据）
     REVIEW_MODE: bool = False
 
     @property

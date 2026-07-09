@@ -239,14 +239,23 @@ onMounted(loadData)
 .load-more-wrap { text-align:center; padding:8px 0 32px; }
 .load-more-btn { padding:14px 48px; background:var(--surface); color:var(--text-secondary); font-size:15px; border-radius:var(--radius); border:1px solid var(--border); box-shadow:var(--shadow-sm); }
 @media (max-width:767px) {
-  .hero-main { padding:24px 18px 20px; } .hero-eyebrow { font-size:14px; }
-  .hero-meta-row { font-size:14px; } .hero-meta-row em { font-size:20px; }
+  .hero-main { padding:24px 18px 20px; } .hero-eyebrow { font-size:16px; }
+  .hero-meta-row { font-size:16px; } .hero-meta-row em { font-size:22px; }
+  .em-hit { font-size:22px !important; }
   .hero-right { width:100px; height:100px; } .hero-gauge { width:100px; height:100px; }
-  .gauge-num { font-size:26px; } .gauge-num small { font-size:12px; }
-  .hero-grid { gap:8px; padding:0 18px 20px; } .hsc { padding:14px 8px; } .hsc-rate { font-size:22px; }
-  .hero-trend { padding:16px 18px 6px; } .trend-card { min-width:84px; padding:12px 10px; } .tc-rate { font-size:20px; }
-  .hist-card { padding:18px 16px; } .hc-title { font-size:14px; }
-  .hc-stamp { padding:4px 14px; font-size:12px; } .hc-match { padding:12px 12px; } .hcm-team { font-size:14px; }
-  .section-card { padding:20px 18px; } .filter-btn { padding:8px 20px; font-size:13px; min-height:38px; }
+  .gauge-num { font-size:28px; } .gauge-num small { font-size:13px; }
+  .hero-grid { gap:8px; padding:0 18px 20px; } .hsc { padding:14px 8px; } .hsc-rate { font-size:24px; }
+  .hero-trend { padding:16px 18px 6px; } .trend-card { min-width:88px; padding:12px 10px; } .tc-rate { font-size:22px; }
+  .tc-month { font-size:14px; } .tc-count { font-size:13px; }
+  .hist-card { padding:18px 16px; } .hc-title { font-size:16px; }
+  .hc-stamp { padding:5px 14px; font-size:13px; } .hc-match { padding:12px 12px; } .hcm-team { font-size:16px; }
+  .hcm-id { font-size:12px; } .hcm-vs-text { font-size:13px; }
+  .section-card { padding:20px 18px; } .section-title { font-size:16px; }
+  .hl-teams { font-size:16px; } .hl-pred { font-size:13px; }
+  .hc-sport { font-size:13px; }
+  .filter-btn { padding:10px 22px; font-size:15px; min-height:40px; }
+  .hc-notes-text { font-size:15px; } .hc-notes-label { font-size:14px; }
+  .trend-title { font-size:16px; }
+  .hsc-sport { font-size:14px; } .hsc-count { font-size:14px; }
 }
 </style>

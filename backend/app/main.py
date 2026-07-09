@@ -125,10 +125,8 @@ async def health_check():
 
 @app.get(f"{settings.API_V1_PREFIX}/system/config")
 async def get_system_config():
-    """获取系统配置（公开接口，用于前端判断审核模式等）"""
-    return {
-        "review_mode": settings.REVIEW_MODE
-    }
+    """获取系统配置"""
+    return {}
 
 # 导入路由
 from app.api import auth, recommendations, profile, history, view_records, daily_achievements, stats
