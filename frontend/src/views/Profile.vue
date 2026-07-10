@@ -2,7 +2,7 @@
   <div class="container">
     <Loading v-if="loading" />
 
-    <template v-else-if="!auth.token">
+    <template v-else-if="!auth.token || !user">
       <!-- 未登录状态 -->
       <div class="guest-card">
         <div class="guest-card-bg"></div>
@@ -162,7 +162,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import api from '../api'
@@ -249,7 +249,7 @@ async function goToAchievement() {
   } catch { router.push('/admin/achievements/edit') }
 }
 
-function handleLogout() { auth.logout(); router.push('/login') }
+function handleLogout() { auth.logout(); router.push('/') }
 
 // ===== 修改密码 =====
 const showPwd = ref(false)
@@ -270,13 +270,25 @@ async function submitPwd() {
     showPwd.value = false
     alert('密码修改成功，请用新密码重新登录')
     auth.logout()
-    router.push('/login')
+    router.push('/')
   } catch (e) {
     pwdError.value = e.message || '修改失败'
   } finally {
     pwdSubmitting.value = false
   }
 }
+
+// 登录/退出时刷新页面状态
+watch(() => auth.token, async () => {
+  loading.value = true
+  if (auth.token) {
+    await auth.fetchUser()
+    user.value = auth.user
+  } else {
+    user.value = null
+  }
+  loading.value = false
+})
 
 onMounted(async () => {
   loading.value = true

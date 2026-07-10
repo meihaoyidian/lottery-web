@@ -378,12 +378,20 @@ loadRecs()
 @media (max-width:767px) {
   .vw-stats { grid-template-columns:repeat(2,1fr); }
   .vw-stat-num { font-size:20px; }
-  .vw-col-first, .vw-col-last { display:none; }
   .vw-list-head .vw-col-first,
   .vw-list-head .vw-col-last { display:none; }
-  .vw-col-phone { flex:1.5; }
+  /* 移动端时间放第二行 */
+  .vw-row { flex-wrap:wrap; padding:10px 8px; }
+  .vw-col-phone { flex:1 1 60%; min-width:0; }
+  .vw-col-role { flex:0 0 auto; }
+  .vw-col-count { width:auto; }
+  .vw-col-first, .vw-col-last {
+    display:block; width:100%; text-align:left; font-size:11px; color:var(--muted);
+    padding-left:0; line-height:1.6;
+  }
+  .vw-col-first::before { content:'首次: '; }
+  .vw-col-last::before { content:'最近: '; }
   .modal { padding:20px 16px; }
-  .vw-row { padding:10px 8px; }
   .vw-nickname { font-size:13px; }
 }
 

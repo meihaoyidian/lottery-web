@@ -2,6 +2,70 @@
 
 > lottery-wxapp（微信小程序）→ lottery-web（浏览器端），后端逻辑和数据库复用。
 
+## 2026-07-10（分享功能 + 标结果展示 + UX 打磨 + Bug 修复）
+
+### 分享功能
+
+新增 [ShareModal.vue](frontend/src/components/ShareModal.vue) 组件，支持两页分享：
+
+- **今日赛事页**：卡片头部分享按钮 → 分享卡片含对阵、AI 预测
+- **历史战绩页**：卡片右上角分享按钮 → 含对阵、预测、结果印章、日期
+- 分享卡片设计：渐变顶条、logo + 品牌、运动标签、对阵 VS、预测黄色卡片、结果印章（虚线内框 + 发光阴影）、二维码卡片区
+- Canvas 高清导出（750px 宽），一键保存 PNG；复制链接备用
+- 二维码放大至 64px + 白卡边框，清晰可扫
+- 固定卡片最小高度，两页导出图片尺寸一致
+
+### 标结果后今日赛事页展示
+
+**问题**：管理员标完结果后推荐被归档（COMPLETED），从今日赛事页消失。
+
+**方案**：标结果不再归档，保持 ACTIVE，仅记录 `actual_outcome`。
+
+- `recommendation_service.py`：查询保持 `status == ACTIVE`
+- `history_service.py:complete_recommendation`：不再设 `COMPLETED` + `archived_at`，仅更新 `actual_outcome`
+- `history_service.py` 全部查询：`status==COMPLETED AND archived_at` → `actual_outcome.isnot(None)`，排序 `archived_at` → `updated_at`
+- `history.py:get_highlights`：排序同步改为 `updated_at`
+- 游客/非会员/会员均可看到命中标识
+
+### 命中标识样式升级
+
+场次卡片命中标签从小标签升级为印章风格（与历史战绩/分享卡片统一）：渐变背景 + 发光阴影 + 虚线内框 + 加粗字体
+
+### 近期好评场次 Bug 修复
+
+- **合集命中遗漏**：`get_highlight_ids` 现在同时检查推荐级别和单场级别 `hit_status`，多场次合集有命中场次也会纳入
+- **未标记冒充好评**：默认值 `'hit'` → `'pending'`，仅明确标记 `'hit'`/`'push'` 的场次计入
+
+### keep-alive + 登录态刷新
+
+- `App.vue`：`<keep-alive>` 缓存赛事/战绩/我的三页，切换不丢滚动
+- `Recommendations.vue` / `History.vue` / `Profile.vue`：`watch(auth.token)` 监听登录/退出，自动重新加载
+- 退出登录后 redirect 改为 `/`（今日赛事首页）而非 `/login`
+
+### 浏览记录移动端优化
+
+移动端首次浏览和最近浏览时间不再隐藏，换行显示带 `首次:` / `最近:` 前缀
+
+### Profile 游客态修复
+
+`v-else-if="!auth.token || !user"` 双重检查，token 过期导致 fetchUser 失败后正确显示游客引导
+
+### 底部导航动画
+
+选中态图标加品牌色光晕（`drop-shadow`），文字加粗，带过渡动画
+
+### 空状态引导
+
+今日赛事页空状态加"查看历史战绩 →"按钮
+
+### UX 细节
+
+- 回到顶部浮动按钮（滚动 >400px 显示，smooth 滚动，淡入淡出）
+- 移动端卡片 padding 增加（外卡 16→18px，内卡 14→16px）
+- 昨日战绩 Banner 底部间距收紧，尾部换行自动 trim
+
+---
+
 ## 2026-07-10（登录后置 + SEO + 浏览记录重设计 + UI 细节打磨）
 
 ### 登录/注册后置，全站公开访问

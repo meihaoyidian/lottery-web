@@ -20,9 +20,13 @@
       </div>
     </header>
 
-    <!-- 页面内容 -->
+    <!-- 页面内容：keep-alive 缓存标签页状态，切换不丢滚动位置 -->
     <main :class="mainClass">
-      <router-view />
+      <router-view v-slot="{ Component }">
+        <keep-alive :include="['Recommendations','History','Profile']">
+          <component :is="Component" />
+        </keep-alive>
+      </router-view>
     </main>
 
     <!-- 移动端：底部标签栏 -->
@@ -46,17 +50,33 @@
         <span class="tab-label">我的</span>
       </router-link>
     </nav>
+
+    <!-- 回到顶部 -->
+    <Transition name="btt-fade">
+      <button v-if="showBackTop" class="back-top-btn" @click="scrollToTop" aria-label="回到顶部">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+          <polyline points="18 15 12 9 6 15"/>
+        </svg>
+      </button>
+    </Transition>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from './stores/auth'
 
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
+
+// 回到顶部
+const showBackTop = ref(false)
+function onScroll() { showBackTop.value = window.scrollY > 400 }
+function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }) }
+onMounted(() => window.addEventListener('scroll', onScroll, { passive: true }))
+onUnmounted(() => window.removeEventListener('scroll', onScroll))
 
 const showNav = computed(() => {
   if (route.name === 'Login') return false
@@ -72,7 +92,7 @@ const mainClass = computed(() => ({
 
 function handleLogout() {
   auth.logout()
-  router.push('/login')
+  router.push('/')
 }
 </script>
 
@@ -163,9 +183,15 @@ main.no-nav { /* 登录/admin 全屏 */ }
 }
 
 .tab-item.active { color: var(--primary); }
+.tab-item.active .tab-icon {
+  filter: drop-shadow(0 0 6px rgba(99,102,241,0.3));
+}
+.tab-item.active .tab-label {
+  font-weight: 700;
+}
 
-.tab-icon { width: 24px; height: 24px; }
-.tab-label { font-size: 11px; font-weight: 500; letter-spacing: 0.03em; }
+.tab-icon { width: 24px; height: 24px; transition: filter 0.2s; }
+.tab-label { font-size: 11px; font-weight: 500; letter-spacing: 0.03em; transition: font-weight 0.2s; }
 
 main.has-bottom-tab {
   padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
@@ -185,4 +211,23 @@ main.has-bottom-tab {
   .top-nav { display: none; }
   .bottom-tab { display: flex; }
 }
+
+/* ==============================
+   回到顶部
+   ============================== */
+.back-top-btn {
+  position: fixed; bottom: 76px; right: 16px; z-index: 99;
+  width: 44px; height: 44px; border-radius: 50%;
+  background: var(--surface); border: 1px solid var(--border);
+  box-shadow: var(--shadow-md);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--text-secondary);
+  transition: all 0.2s;
+}
+.back-top-btn:hover { color: var(--primary); border-color: var(--primary); box-shadow: var(--shadow-lg); transform: translateY(-2px); }
+.back-top-btn:active { transform: translateY(0); }
+.back-top-btn svg { width: 22px; height: 22px; }
+
+.btt-fade-enter-active, .btt-fade-leave-active { transition: all 0.25s ease; }
+.btt-fade-enter-from, .btt-fade-leave-to { opacity: 0; transform: translateY(8px); }
 </style>

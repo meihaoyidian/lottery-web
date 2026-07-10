@@ -49,10 +49,9 @@ class HistoryService:
         Returns:
             包含推荐列表和分页信息的字典
         """
-        # 构建查询（默认显示全部历史数据）
+        # 构建查询：有实际结果的推荐即为历史数据
         query = db.query(Recommendation).filter(
-            Recommendation.status == RecommendationStatus.COMPLETED,
-            Recommendation.archived_at.isnot(None)
+            Recommendation.actual_outcome.isnot(None)
         )
 
         # 添加过滤条件
@@ -86,14 +85,14 @@ class HistoryService:
         if end_date:
             query = query.filter(Recommendation.created_at <= end_date)
 
-        # 按归档时间降序排列
-        query = query.order_by(Recommendation.archived_at.desc())
+        # 按更新时间降序排列
+        query = query.order_by(Recommendation.updated_at.desc())
 
         # 非付费用户：只展示命中率高的推荐（actual_outcome.hit_status='hit'）
         if not is_paid_user:
             rec_ids = HistoryService.get_highlight_ids(db, limit=10)
             if rec_ids:
-                items = query.filter(Recommendation.id.in_(rec_ids)).order_by(Recommendation.archived_at.desc()).all()
+                items = query.filter(Recommendation.id.in_(rec_ids)).order_by(Recommendation.updated_at.desc()).all()
             else:
                 items = []
 
@@ -209,10 +208,9 @@ class HistoryService:
         Returns:
             统计数据字典
         """
-        # 构建查询（默认统计全部历史数据）
+        # 构建查询：有实际结果的推荐
         query = db.query(Recommendation).filter(
-            Recommendation.status == RecommendationStatus.COMPLETED,
-            Recommendation.archived_at.isnot(None)
+            Recommendation.actual_outcome.isnot(None)
         )
 
         # 添加过滤条件
@@ -495,10 +493,11 @@ class HistoryService:
 
             recommendation.prediction_data = prediction_data
 
-        # 更新状态和结果，并设置归档时间
-        recommendation.status = RecommendationStatus.COMPLETED
+        # 标结果：保持 ACTIVE 以便今日赛事页展示，仅记录 actual_outcome
         recommendation.actual_outcome = actual_outcome
-        recommendation.archived_at = datetime.utcnow()  # 设置归档时间，让推荐在历史记录中显示
+        # 如果之前未归档，保持 ACTIVE；如需归档由管理员手动删除
+        if recommendation.status != RecommendationStatus.INACTIVE:
+            recommendation.status = RecommendationStatus.ACTIVE
 
         db.commit()
         db.refresh(recommendation)
@@ -522,7 +521,7 @@ class HistoryService:
         """
         return db.query(Recommendation).filter(
             Recommendation.id == recommendation_id,
-            Recommendation.status == RecommendationStatus.COMPLETED
+            Recommendation.actual_outcome.isnot(None)
         ).first()
 
     @staticmethod
@@ -545,10 +544,9 @@ class HistoryService:
         import json
         from collections import defaultdict
 
-        # 构建查询
+        # 构建查询：有实际结果的推荐
         query = db.query(Recommendation).filter(
-            Recommendation.status == RecommendationStatus.COMPLETED,
-            Recommendation.archived_at.isnot(None)
+            Recommendation.actual_outcome.isnot(None)
         )
 
         # 添加预测类型过滤
@@ -639,6 +637,7 @@ class HistoryService:
         """
         获取高命中推荐ID列表（用于免费用户预览展示）
         分批查询，避免全量加载到内存
+        同时检查推荐级别 actual_outcome 和单场级别 hit_status
         """
         from app.models.recommendation import Recommendation, RecommendationStatus
 
@@ -648,9 +647,8 @@ class HistoryService:
 
         while len(ids) < limit:
             batch = db.query(Recommendation).filter(
-                Recommendation.status == RecommendationStatus.COMPLETED,
-                Recommendation.archived_at.isnot(None)
-            ).order_by(Recommendation.archived_at.desc()).offset(offset).limit(BATCH_SIZE).all()
+                Recommendation.actual_outcome.isnot(None)
+            ).order_by(Recommendation.updated_at.desc()).offset(offset).limit(BATCH_SIZE).all()
 
             if not batch:
                 break
@@ -658,12 +656,20 @@ class HistoryService:
             for rec in batch:
                 if len(ids) >= limit:
                     break
+                # 推荐级别：整体命中 或 管理员标记为精选
                 if rec.actual_outcome:
                     hit_status = rec.actual_outcome.get('hit_status', '')
                     is_highlight = rec.actual_outcome.get('is_highlight', False)
-                    # 入选条件：命中(hit/push) 或 管理员显式标记为精选展示(partial也可)
                     if HistoryService._is_accurate_status(hit_status) or is_highlight:
                         ids.append(rec.id)
+                        continue
+                # 单场级别：多场次合集中有命中场次也纳入
+                if rec.prediction_data:
+                    for m in rec.prediction_data.get('single_matches', []):
+                        m_status = str(m.get('hit_status', '')).strip().lower()
+                        if m_status in ('hit', 'push'):
+                            ids.append(rec.id)
+                            break
 
             offset += BATCH_SIZE
 

@@ -49,7 +49,7 @@
         <div class="history-list">
           <div v-for="item in historyList" :key="item.id" class="hist-card" :class="[item.hasKeyMatch?'hc-km':'',item.actual_outcome?.hit_status?'outcome-'+item.actual_outcome.hit_status:'']">
             <div v-if="item.hasKeyMatch" class="hc-km-badge">重心</div>
-            <div class="hc-top"><span :class="['hc-sport','sport-'+item.prediction_type]">{{ item.prediction_type==='football'?'足球':'篮球' }}</span><span v-if="item.actual_outcome?.hit_status" class="hc-stamp" :class="'stamp-'+item.actual_outcome.hit_status">{{ item.actual_outcome.hit_status==='partial'&&item.actual_outcome.partial_detail?item.actual_outcome.partial_detail:resultLabel(item.actual_outcome.hit_status) }}</span></div>
+            <div class="hc-top"><span :class="['hc-sport','sport-'+item.prediction_type]">{{ item.prediction_type==='football'?'足球':'篮球' }}</span><span v-if="item.actual_outcome?.hit_status" class="hc-stamp" :class="'stamp-'+item.actual_outcome.hit_status">{{ item.actual_outcome.hit_status==='partial'&&item.actual_outcome.partial_detail?item.actual_outcome.partial_detail:resultLabel(item.actual_outcome.hit_status) }}</span><button v-if="item.prediction_data?.single_matches?.length" class="hc-share-btn" title="分享" @click.stop="openShare(item)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></button></div>
             <div class="hc-title-row" @click="toggleExpand(item.id)"><span class="hc-title">{{ item.title }}</span><span class="hc-arrow">{{ expanded[item.id]?'▲':'▼' }}</span></div>
             <div v-if="expanded[item.id]" class="hc-detail">
               <div v-if="item.prediction_data?.single_matches?.length" class="hc-matches"><div v-for="m in item.prediction_data.single_matches" :key="m.match_id" class="hc-match" :class="[m.is_key_match?'hcm-km':'',m.is_featured?'hcm-ft':'',m.hit_status==='hit'?'hcm-hit':m.hit_status==='miss'?'hcm-miss':'']"><div class="hcm-head"><span class="hcm-id">{{ m.match_id }}</span><span v-if="m.is_key_match" class="hcm-tag tag-km">重心</span><span v-else-if="m.is_featured" class="hcm-tag tag-ft">精选</span><span v-if="m.is_upset_warning" class="hcm-tag tag-up">冷门预警</span><span v-if="m.hit_status&&m.hit_status!=='pending'" class="hcm-result-tag" :class="'hcmr-'+m.hit_status">{{ m.hit_status==='hit'?'好评':m.hit_status==='push'?'走水':'未中' }}</span></div><div class="hcm-vs"><span class="hcm-team">{{ m.home_team }}</span><span class="hcm-vs-text">vs</span><span class="hcm-team">{{ m.away_team }}</span></div><div v-if="m.total_points||m.handicap" class="hcm-preds"><span v-if="m.total_points" class="hcm-pred">{{ m.total_points }}</span><span v-if="m.handicap" class="hcm-pred">{{ m.handicap }}</span></div><p v-if="m.prediction_basis" class="hcm-basis">{{ m.prediction_basis }}</p></div></div>
@@ -65,14 +65,18 @@
 
     <!-- 非会员：开通会员浮动按钮 + 二维码弹窗（共享组件） -->
     <UpgradeGuide ref="upgradeRef" :showFab="!isPaidUser" />
+
+    <!-- 分享弹窗 -->
+    <ShareModal :show="showShare" :data="shareData" @close="showShare=false" />
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import api from '../api'
 import UpgradeGuide from '../components/UpgradeGuide.vue'
+import ShareModal from '../components/ShareModal.vue'
 import Loading from '../components/Loading.vue'
 
 const auth = useAuthStore()
@@ -86,6 +90,26 @@ const ceil = (n) => n != null ? Math.ceil(Number(n)) : 0
 const ringDash = computed(() => { const p = Math.min(statistics.value?.accuracy_rate||0,100), l = 2*Math.PI*42; return `${(p/100)*l} ${l}` })
 function resultLabel(s) { const m = { hit:'好评', push:'走水', partial:'部分', miss:'蓄力' }; return m[s]||s }
 function toggleExpand(id) { expanded.value[id] = !expanded.value[id] }
+
+// 分享
+const showShare = ref(false)
+const shareData = ref({})
+function openShare(item) {
+  const m = item.prediction_data?.single_matches?.[0] || {}
+  const ao = item.actual_outcome
+  const preds = [m.total_points, m.handicap].filter(Boolean).join(' / ')
+  const d = new Date(item.created_at)
+  shareData.value = {
+    predictionType: item.prediction_type || 'football',
+    homeTeam: m.home_team || '',
+    awayTeam: m.away_team || '',
+    prediction: preds || '',
+    resultLabel: ao?.hit_status ? resultLabel(ao.hit_status) : '',
+    resultStatus: ao?.hit_status || '',
+    date: d ? `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}` : ''
+  }
+  showShare.value = true
+}
 function onFilter(idx) { if (sportIdx.value===idx) return; sportIdx.value=idx; loadData() }
 
 async function loadData() {
@@ -107,6 +131,8 @@ async function loadMoreHistory() {
   const s = sportTypes[sportIdx.value], p = { page:pageNum.value+1, page_size:20 }; if(s) p.prediction_type=s
   const res = await api.getHistory(p); historyList.value=[...historyList.value,...(res.items||[])]; pageNum.value++; hasMoreHistory.value=res.has_more
 }
+
+watch(() => auth.token, () => { historyList.value=[]; hasMoreHistory.value=false; pageNum.value=1; loadData() })
 
 onMounted(loadData)
 </script>
@@ -193,7 +219,15 @@ onMounted(loadData)
 .hist-card.outcome-miss { opacity:0.78; } .hist-card.outcome-miss::before { background:#CBD5E1; }
 .hist-card.hc-km { border-color:#FDE68A; }
 .hc-km-badge { position:absolute; top:0; left:50%; transform:translateX(-50%); background:linear-gradient(135deg,#F59E0B,#E8870A); padding:4px 18px; border-radius:0 0 8px 8px; z-index:1; font-size:11px; font-weight:600; color:#fff; }
-.hc-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; gap:12px; }
+.hc-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; gap:8px; }
+.hc-share-btn {
+  flex-shrink:0; width:32px; height:32px; padding:0; border:none; border-radius:50%;
+  background:var(--bg); color:var(--muted); cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  transition:all .15s; margin-left:auto;
+}
+.hc-share-btn:hover { background:#EEF2FF; color:var(--primary); }
+.hc-share-btn svg { width:16px; height:16px; }
 .hc-sport { display:inline-flex; padding:5px 14px; border-radius:20px; font-size:13px; font-weight:600; }
 .sport-football { background:#E0F7FA; color:#0288D1; } .sport-basketball { background:#FFF3E0; color:#E65100; }
 .hc-stamp { display:inline-flex; align-items:center; padding:5px 18px; border-radius:40px; font-size:14px; font-weight:800; letter-spacing:0.06em; position:relative; }
@@ -247,7 +281,7 @@ onMounted(loadData)
   .hero-grid { gap:8px; padding:0 18px 20px; } .hsc { padding:14px 8px; } .hsc-rate { font-size:26px; }
   .hero-trend { padding:16px 18px 6px; } .trend-card { min-width:88px; padding:12px 10px; } .tc-rate { font-size:24px; }
   .tc-month { font-size:15px; } .tc-count { font-size:14px; }
-  .hist-card { padding:18px 16px; } .hc-title { font-size:17px; }
+  .hist-card { padding:20px 18px; } .hc-title { font-size:17px; }
   .hc-stamp { padding:5px 14px; font-size:14px; } .hc-match { padding:12px 12px; } .hcm-team { font-size:17px; }
   .hcm-id { font-size:13px; } .hcm-vs-text { font-size:14px; }
   .section-card { padding:20px 18px; } .section-title { font-size:17px; }

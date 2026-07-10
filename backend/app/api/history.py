@@ -258,7 +258,7 @@ async def get_highlights(
     if not rec_ids:
         return {"highlights": []}
 
-    recs = db.query(Recommendation).filter(Recommendation.id.in_(rec_ids)).order_by(Recommendation.archived_at.desc()).all()
+    recs = db.query(Recommendation).filter(Recommendation.id.in_(rec_ids)).order_by(Recommendation.updated_at.desc()).all()
 
     highlights = []
     for rec in recs:
@@ -267,9 +267,9 @@ async def get_highlights(
         for match in rec.prediction_data.get('single_matches', []):
             if len(highlights) >= 20:
                 break
-            # 只取命中/走水的单场
-            m_status = str(match.get('hit_status', 'hit')).strip().lower()
-            if m_status not in ('hit', 'push', 'none', ''):
+            # 只取已明确标记为命中/走水的单场
+            m_status = str(match.get('hit_status', 'pending')).strip().lower()
+            if m_status not in ('hit', 'push'):
                 continue
             highlights.append({
                 'match_id': match.get('match_id', ''),

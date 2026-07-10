@@ -13,6 +13,9 @@
       <div class="sport-badge" :class="predictionType">
         <span>{{ sportName }}</span>
       </div>
+      <button class="card-share-btn" title="分享" @click.stop="$emit('share')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+      </button>
     </div>
 
     <!-- 标题 -->
@@ -168,7 +171,7 @@ function confidenceClass(rate) {
 <style scoped>
 .card { background:var(--surface); border-radius:var(--radius-lg); padding:22px 24px; margin-bottom:14px; border:1px solid var(--border); box-shadow:var(--shadow-sm); position:relative; overflow:hidden; }
 .key-match-card { border-color:#FDE68A; }
-@media (max-width:767px) { .card { padding:18px 16px; border-radius:var(--radius); } }
+@media (max-width:767px) { .card { padding:20px 18px; border-radius:var(--radius); } }
 
 /* 重心场次左边金色条 */
 .key-match-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:4px; background:#F59E0B; }
@@ -177,10 +180,18 @@ function confidenceClass(rate) {
 .corner-multi { background:#6366F1; }
 .corner-key { background:#F59E0B; }
 
-.card-header { margin-bottom:12px; }
+.card-header { margin-bottom:12px; display:flex; align-items:center; justify-content:space-between; }
 .sport-badge { display:inline-flex; padding:5px 14px; border-radius:20px; font-size:13px; font-weight:600; }
 .sport-badge.football { background:#E0F7FA; color:#0288D1; }
 .sport-badge.basketball { background:#FFF3E0; color:#E65100; }
+.card-share-btn {
+  width:32px; height:32px; padding:0; border:none; border-radius:50%;
+  background:var(--bg); color:var(--muted); cursor:pointer;
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  transition:all .15s; min-width:32px;
+}
+.card-share-btn:hover { background:#EEF2FF; color:var(--primary); }
+.card-share-btn svg { width:15px; height:15px; }
 
 .card-title-section { margin-bottom:14px; padding-bottom:12px; border-bottom:1px solid var(--border-light); }
 .card-title { font-size:17px; font-weight:700; color:var(--text); line-height:1.5; display:block; }
@@ -196,7 +207,7 @@ function confidenceClass(rate) {
 .match-card.mc-featured { border-color:#DDD6FE; background:#FAFAFE; }
 .match-card.mc-featured::before { background:#8B5CF6; }
 .match-card.mc-confirmed { border-color:#A7F3D0; }
-@media (max-width:767px) { .match-card { padding:14px 14px; } }
+@media (max-width:767px) { .match-card { padding:16px 16px; } }
 
 /* 已确认角标 — 左上方折叠角标，与小程序一致 */
 .match-card.mc-confirmed { padding-top: 36px; }
@@ -215,10 +226,19 @@ function confidenceClass(rate) {
 .mc-tag-featured { color:#6D28D9; background:#FAFAFE; border:1px solid #DDD6FE; }
 .mc-tag-public { color:#059669; background:#ECFDF5; }
 .mc-tag-upset { color:#DC2626; background:#FEF2F2; }
-.mc-tag-result { font-size:11px; font-weight:700; padding:2px 8px; border-radius:10px; color:#fff; }
-.mc-result-hit { background:#10B981; }
-.mc-result-push { background:#8B5CF6; }
-.mc-result-miss { background:#E2E8F0; color:#94A3B8; }
+/* 命中标签 — 醒目的印章风格 */
+.mc-tag-result {
+  font-size:12px; font-weight:800; padding:4px 12px; border-radius:20px;
+  color:#fff; position:relative; letter-spacing:0.04em;
+}
+.mc-tag-result::after {
+  content:''; position:absolute; inset:2px; border-radius:18px;
+  border:1.5px dashed rgba(255,255,255,0.3); pointer-events:none;
+}
+.mc-result-hit { background:linear-gradient(135deg,#10B981,#059669); box-shadow:0 2px 8px rgba(5,150,105,0.3); }
+.mc-result-push { background:linear-gradient(135deg,#8B5CF6,#7C3AED); box-shadow:0 2px 8px rgba(124,58,237,0.3); }
+.mc-result-miss { background:#E2E8F0; color:#94A3B8; box-shadow:none; }
+.mc-result-miss::after { border-color:rgba(0,0,0,0.08); }
 .mc-tag-confidence { font-size:11px; font-weight:600; padding:2px 8px; border-radius:4px; }
 .rate-high { color:#059669; background:#ECFDF5; }
 .rate-normal { color:#4F46E5; background:#EEF2FF; }

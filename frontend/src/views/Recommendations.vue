@@ -96,6 +96,7 @@
         <span class="empty-icon"></span>
         <span class="empty-title">今日场次更新中</span>
         <span class="empty-desc">每日下午 2 点至 6 点之间更新，敬请关注</span>
+        <button class="empty-action" @click="$router.push('/history')">查看历史战绩 →</button>
       </div>
 
       <!-- 推荐列表 -->
@@ -108,6 +109,7 @@
           :isAnalysisPending="rec.isAnalysisPending"
           :isFirst="index === 0"
           @upgrade="openUpgrade"
+          @share="openShare(rec)"
         />
         <div v-if="hasMore" class="load-more" @click="loadMore">
           <span>{{ loadingMore ? '加载中...' : '加载更多' }}</span>
@@ -117,16 +119,20 @@
 
     <!-- 非会员：开通会员浮动按钮 + 二维码弹窗（共享组件） -->
     <UpgradeGuide ref="upgradeRef" :showFab="showUpgradeEntry" />
+
+    <!-- 分享弹窗 -->
+    <ShareModal :show="showShare" :data="shareData" @close="showShare=false" />
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import api from '../api'
 import RecommendationCard from '../components/RecommendationCard.vue'
 import UpgradeGuide from '../components/UpgradeGuide.vue'
+import ShareModal from '../components/ShareModal.vue'
 import Loading from '../components/Loading.vue'
 
 const auth = useAuthStore()
@@ -158,6 +164,24 @@ const upgradeRef = ref(null)
 const showUpgradeEntry = computed(() => !auth.isPaidUser() && !auth.isAdmin())
 function openUpgrade() {
   upgradeRef.value?.open()
+}
+
+// 分享
+const showShare = ref(false)
+const shareData = ref({})
+function openShare(rec) {
+  const m = rec.prediction_data?.single_matches?.[0] || {}
+  const preds = [m.total_points, m.handicap].filter(Boolean).join(' / ')
+  shareData.value = {
+    predictionType: rec.prediction_type || 'football',
+    homeTeam: m.home_team || '',
+    awayTeam: m.away_team || '',
+    prediction: preds || '',
+    resultLabel: '',
+    resultStatus: '',
+    date: ''
+  }
+  showShare.value = true
 }
 // 非会员进页面自动弹一次（同一会话不重复）
 function maybeAutoPopup() {
@@ -298,6 +322,14 @@ function onSportFilter(index) {
 }
 
 function loadMore() { loadRecommendations(true) }
+
+// 登录/退出时重新加载页面数据
+watch(() => auth.token, () => {
+  page.value = 1
+  recommendations.value = []
+  loadRecommendations()
+  loadScheduleStatus()
+})
 
 onMounted(async () => {
   // 已登录则拉取用户信息，未登录也能浏览赛事页
@@ -664,6 +696,14 @@ onUnmounted(() => {
 .empty-icon { font-size: 40px; display: block; margin-bottom: 16px; }
 .empty-title { font-size: 17px; font-weight: 600; color: var(--text-secondary); }
 .empty-desc { font-size: 15px; color: var(--muted); margin-top: 8px; display: block; }
+.empty-action {
+  margin-top: 20px; padding: 10px 28px;
+  background: var(--primary-light); color: var(--primary);
+  border: 1px solid #C7D2FE; border-radius: 24px;
+  font-size: 15px; font-weight: 600; cursor: pointer;
+  transition: all 0.15s;
+}
+.empty-action:hover { background: #E0E7FF; }
 
 /* ===========================
    列表
