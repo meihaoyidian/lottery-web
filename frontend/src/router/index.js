@@ -74,22 +74,22 @@ router.beforeEach(async (to, from, next) => {
     auth.restore()
   }
 
-  // 如果没有 token 且目标不是登录页，尝试静默恢复，失败则跳登录
-  if (!auth.token && to.name !== 'Login') {
-    next({ name: 'Login', query: { redirect: to.fullPath } })
-    return
-  }
-
   // 已登录用户访问登录页，跳首页
   if (auth.token && to.name === 'Login') {
     next({ name: 'Recommendations' })
     return
   }
 
-  // 管理后台权限校验
-  if (to.meta.admin && auth.user?.role !== 'admin') {
-    next({ name: 'Recommendations' })
-    return
+  // 管理后台需要管理员权限（未登录跳登录页）
+  if (to.meta.admin) {
+    if (!auth.token) {
+      next({ name: 'Login', query: { redirect: to.fullPath } })
+      return
+    }
+    if (auth.user?.role !== 'admin') {
+      next({ name: 'Recommendations' })
+      return
+    }
   }
 
   next()

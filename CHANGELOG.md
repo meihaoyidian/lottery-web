@@ -2,6 +2,52 @@
 
 > lottery-wxapp（微信小程序）→ lottery-web（浏览器端），后端逻辑和数据库复用。
 
+## 2026-07-10（登录后置 + SEO + 浏览记录重设计 + UI 细节打磨）
+
+### 登录/注册后置，全站公开访问
+
+**问题**：打开网站就跳登录页，搜索引擎和路人完全看不到内容，无法引流。
+
+**方案**：登录/注册后置为可选操作，任何人打开直接进入今日赛事页浏览。
+
+- `router/index.js`：去掉全局强制登录跳转；未登录可访问首页/战绩/个人中心；仅管理后台拦截未登录用户（跳登录页）
+- `Recommendations.vue`：`onMounted` 中 `fetchUser()` 仅已登录时调用；`showUpgradeEntry` 对未登录用户也生效
+- `Profile.vue`：未登录时显示引导卡片（logo + "登录后可查看个人数据" + 登录/注册按钮）；`onMounted` 仅已登录时拉取用户数据
+- `History.vue`：无需改动，`auth.isPaidUser()` 对 null user 返回 false，后端 API 已兼容
+
+### SEO 基础优化
+
+`index.html` 补全搜索引擎和社交分享元标签：
+
+- `meta description`：平台价值描述，搜索引擎摘要
+- `meta keywords`：中文关键词（AI预测、足球分析、篮球分析等）
+- `meta robots`：允许索引
+- `link canonical`：规范域名 `sportlens.online`
+- Open Graph 标签：微信/QQ/Facebook 分享时显示标题、描述、logo 卡片
+- Twitter Card 标签
+- `theme-color`：改为品牌色 `#6366F1`
+
+### 推荐管理 · 浏览记录重设计
+
+管理员视角重新设计浏览记录弹窗（`ManageRecommendations.vue`）：
+
+**汇总统计**（4 卡网格）：总浏览次数、登录用户数、游客浏览数、人均浏览次数
+
+**用户明细列表**（按浏览次数降序）：
+- 昵称 + 手机号、身份标签（管理员/会员/非会员）
+- **浏览次数**（紫色胶囊数，核心新增信息）
+- 首次浏览时间、最近浏览时间
+- 表格式布局，移动端隐藏时间列
+
+### UI 细节打磨
+
+- **昨日战绩 Banner**：移除 `white-space:pre-line` 又加回（管理员换行原样显示）；尾部换行自动 trim；收紧底部间距（.ach-inner padding-bottom, .ach-footer margin/padding）；移动端字号再次上调（标题 19px、描述 15px）
+- **历史战绩总结说明**：`.hc-notes-text` 加 `white-space: pre-line` 保留管理员标结果时的换行
+- **场次卡片总结简述**：去掉 `.mc-summary` 左侧紫色边框 `border-left: 3px solid var(--primary)`
+- **场次卡片预告条**：数据未填时统一显示轻量提示"模型数据实时更新中"，不再区分第一张卡片的特殊绿色预告条（顶部状态栏已说明时间节点）
+
+---
+
 ## 2026-07-10（移动端输入修复 + 全局字号提升 + 已确认角标修复）
 
 ### 移动端输入框无法弹出键盘

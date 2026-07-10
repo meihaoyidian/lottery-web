@@ -154,8 +154,8 @@ const isPaidUser = computed(() => auth.isPaidUser())
 
 // 二维码升级弹窗（非会员引导，共享组件）
 const upgradeRef = ref(null)
-// 非会员（且非管理员）才显示升级入口
-const showUpgradeEntry = computed(() => !isPaidUser.value && !auth.isAdmin())
+// 非会员（且非管理员）才显示升级入口，未登录也显示
+const showUpgradeEntry = computed(() => !auth.isPaidUser() && !auth.isAdmin())
 function openUpgrade() {
   upgradeRef.value?.open()
 }
@@ -300,10 +300,11 @@ function onSportFilter(index) {
 function loadMore() { loadRecommendations(true) }
 
 onMounted(async () => {
-  await auth.fetchUser()
+  // 已登录则拉取用户信息，未登录也能浏览赛事页
+  if (auth.token) await auth.fetchUser()
   await Promise.all([loadScheduleStatus(), loadRecommendations(), loadSocialProof(), loadAchievement()])
 
-  // 非会员自动弹一次二维码引导（同一会话仅一次）
+  // 非会员（含未登录）自动弹一次二维码引导
   maybeAutoPopup()
 
   // 页面可见性监听：等同小程序 onShow，切换 tab 或从其他页面返回时自动刷新

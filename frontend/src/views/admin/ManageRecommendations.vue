@@ -93,19 +93,59 @@
 
     <!-- 浏览弹窗 -->
     <div v-if="showViewers" class="modal-mask" @click.self="showViewers=false">
-      <div class="modal modal-lg">
-        <h3>浏览记录</h3>
-        <p class="msub">{{ vTitle }}</p>
-        <div class="vstats"><span>总浏览 {{ vTotal }}</span><span>用户 {{ vUnique }}</span></div>
-        <div class="vlist">
-          <p v-if="!viewers.length" style="text-align:center;padding:20px;color:var(--muted)">暂无数据</p>
-          <div v-for="(v,i) in viewers" :key="i" class="vi">
-            <span class="vi-phone">{{ v.user_phone }}</span>
-            <span :class="['vi-role',v._roleClass]">{{ v._roleLabel }}</span>
-            <span class="vi-time">{{ v._viewedAt || v.last_viewed_at }}</span>
+      <div class="modal modal-xl">
+        <div class="vw-head">
+          <h3>浏览记录</h3>
+          <p class="msub">{{ vTitle }}</p>
+        </div>
+
+        <!-- 汇总统计卡片 -->
+        <div class="vw-stats">
+          <div class="vw-stat">
+            <span class="vw-stat-num">{{ vTotal }}</span>
+            <span class="vw-stat-label">总浏览次数</span>
+          </div>
+          <div class="vw-stat vw-stat--user">
+            <span class="vw-stat-num">{{ vUnique }}</span>
+            <span class="vw-stat-label">登录用户</span>
+          </div>
+          <div class="vw-stat vw-stat--guest">
+            <span class="vw-stat-num">{{ vGuest }}</span>
+            <span class="vw-stat-label">游客浏览</span>
+          </div>
+          <div class="vw-stat vw-stat--avg">
+            <span class="vw-stat-num">{{ vAvg }}</span>
+            <span class="vw-stat-label">人均次数</span>
           </div>
         </div>
-        <button class="mcancel" @click="showViewers=false">关闭</button>
+
+        <!-- 用户明细列表 -->
+        <div class="vw-list">
+          <div class="vw-list-head">
+            <span class="vw-col-phone">用户</span>
+            <span class="vw-col-role">身份</span>
+            <span class="vw-col-count">次数</span>
+            <span class="vw-col-first">首次浏览</span>
+            <span class="vw-col-last">最近浏览</span>
+          </div>
+          <p v-if="!viewers.length" class="vw-empty">暂无登录用户浏览记录</p>
+          <div v-for="(v,i) in viewers" :key="i" class="vw-row">
+            <span class="vw-col-phone">
+              <span class="vw-nickname">{{ v.user_nickname || v.user_phone }}</span>
+              <span v-if="v.user_nickname" class="vw-phone-sub">{{ v.user_phone }}</span>
+            </span>
+            <span class="vw-col-role">
+              <span :class="['vw-tag', v._roleClass]">{{ v._roleLabel }}</span>
+            </span>
+            <span class="vw-col-count">
+              <span class="vw-count-badge">{{ v.view_count || 1 }}</span>
+            </span>
+            <span class="vw-col-first">{{ v._firstAt }}</span>
+            <span class="vw-col-last">{{ v._viewedAt }}</span>
+          </div>
+        </div>
+
+        <button class="mcancel vw-close" @click="showViewers=false">关闭</button>
       </div>
     </div>
   </div>
@@ -122,7 +162,8 @@ const statusMap = { active:'进行中', completed:'已完成', inactive:'已删�
 const hitOpts = [{ value:'hit', name:'好评' },{ value:'miss', name:'蓄力' },{ value:'partial', name:'部分' },{ value:'push', name:'走水' }]
 const showResult = ref(false), showViewers = ref(false), submitting = ref(false), hi = ref(0)
 const rf = reactive({ id:null, title:'', hitStatus:'hit', partialDetail:'', notes:'' })
-const viewers = ref([]), vTitle = ref(''), vTotal = ref(0), vUnique = ref(0)
+const viewers = ref([]), vTitle = ref(''), vTotal = ref(0), vUnique = ref(0), vGuest = ref(0)
+const vAvg = ref(0)
 
 function cardClass(r) { return [r.is_confirmed?'is-ok':'',r.hasKeyMatch?'is-km':'',r.actual_outcome?.hit_status?'ot-'+r.actual_outcome.hit_status:''] }
 function outcomeLabel(s) { return { hit:'好评', miss:'蓄力', partial:'部分好评', push:'走水' }[s]||s }
@@ -159,16 +200,22 @@ async function submitResult() {
 }
 
 async function openViewers(r) {
-  showViewers.value=true; vTitle.value=r.title; viewers.value=[]; vTotal.value=0; vUnique.value=0;
+  showViewers.value=true; vTitle.value=r.title; viewers.value=[]; vTotal.value=0; vUnique.value=0; vGuest.value=0; vAvg.value=0;
   try {
     const res = await api.getViewRecords(r.id)
-    viewers.value = (res.records||[]).map(x => ({
+    // 按浏览次数降序排列
+    const sorted = (res.records||[]).sort((a,b) => (b.view_count||0) - (a.view_count||0))
+    viewers.value = sorted.map(x => ({
       ...x,
       _roleLabel: x.user_role==='admin'?'管理员':x.user_role==='guest'?'游客':x.user_is_paid?'会员':'非会员',
       _roleClass: x.user_role==='admin'?'va':x.user_role==='guest'?'vg':x.user_is_paid?'vp':'vf',
-      _viewedAt: x.last_viewed_at ? formatViewTime(x.last_viewed_at) : ''
+      _viewedAt: x.last_viewed_at ? formatViewTime(x.last_viewed_at) : '',
+      _firstAt: x.first_viewed_at ? formatViewTime(x.first_viewed_at) : ''
     }))
-    vTotal.value = res.total; vUnique.value = res.unique_viewers
+    vTotal.value = res.total
+    vUnique.value = res.unique_viewers
+    vGuest.value = res.guest_view_count || 0
+    vAvg.value = vUnique.value > 0 ? (vTotal.value / vUnique.value).toFixed(1) : 0
   } catch(e) { alert('加载浏览记录失败: ' + (e.message||'')) }
 }
 
@@ -264,7 +311,7 @@ loadRecs()
 
 .modal-mask { position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:200; display:flex; align-items:center; justify-content:center; padding:24px; }
 .modal { background:#fff; border-radius:16px; padding:28px; max-width:500px; width:100%; max-height:80vh; overflow-y:auto; }
-.modal-lg { max-width:600px; }
+.modal-xl { max-width:680px; }
 .modal h3 { font-size:18px; font-weight:700; margin-bottom:4px; }
 .msub { font-size:13px; color:var(--muted); margin-bottom:16px; }
 .mbtns { display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
@@ -275,13 +322,70 @@ loadRecs()
 .msubmit { flex:1; padding:12px; background:var(--primary); color:#fff; border-radius:10px; font-size:15px; font-weight:700; cursor:pointer; }
 .msubmit:disabled { opacity:.5; }
 .mcancel { padding:12px 24px; background:var(--bg); color:var(--text-secondary); border-radius:10px; cursor:pointer; }
-.vstats { display:flex; gap:24px; font-size:13px; color:var(--muted); margin-bottom:12px; }
-.vlist { max-height:260px; overflow-y:auto; margin-bottom:14px; }
-.vi { display:flex; align-items:center; gap:12px; padding:8px 0; border-bottom:1px solid var(--border-light); font-size:13px; }
-.vi-phone { flex:1; font-weight:500; }
-.vi-role { font-size:10px; padding:2px 8px; border-radius:6px; font-weight:600; }
-.va { background:#EEF2FF; color:var(--primary); } .vg { background:#F5F3FF; color:#7C3AED; } .vp { background:#FEF3C7; color:#B45309; } .vt { background:#ECFDF5; color:var(--success); } .vf { background:var(--bg); color:var(--muted); }
-.vi-time { font-size:12px; color:var(--muted); }
+
+/* ===== 浏览记录弹窗 ===== */
+.vw-head { margin-bottom:0; }
+.vw-head .msub { margin-bottom:14px; }
+
+/* 汇总统计 */
+.vw-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:18px; }
+.vw-stat {
+  text-align:center; padding:14px 8px; border-radius:var(--radius);
+  background:var(--bg); border:1px solid var(--border-light);
+}
+.vw-stat-num { display:block; font-size:24px; font-weight:800; color:var(--text); line-height:1.2; }
+.vw-stat-label { font-size:12px; color:var(--muted); margin-top:4px; display:block; }
+.vw-stat--user .vw-stat-num { color:var(--primary); }
+.vw-stat--guest .vw-stat-num { color:#8B5CF6; }
+.vw-stat--avg .vw-stat-num { color:#F59E0B; }
+
+/* 列表 */
+.vw-list { max-height:340px; overflow-y:auto; margin-bottom:14px; }
+.vw-list-head {
+  display:flex; align-items:center; gap:8px;
+  padding:8px 12px; font-size:12px; font-weight:600; color:var(--muted);
+  border-bottom:2px solid var(--border); position:sticky; top:0; background:#fff; z-index:1;
+}
+.vw-empty { text-align:center; padding:28px 0; color:var(--muted); font-size:14px; }
+
+.vw-row {
+  display:flex; align-items:center; gap:8px;
+  padding:12px 12px; border-bottom:1px solid var(--border-light); font-size:13px;
+  transition:background .1s;
+}
+.vw-row:hover { background:var(--bg); }
+
+.vw-col-phone { flex:2; min-width:0; display:flex; flex-direction:column; }
+.vw-nickname { font-weight:600; color:var(--text); font-size:14px; }
+.vw-phone-sub { font-size:11px; color:var(--muted); }
+.vw-col-role { flex:1; text-align:center; }
+.vw-col-count { width:48px; text-align:center; }
+.vw-col-first { width:110px; text-align:center; font-size:12px; color:var(--muted); }
+.vw-col-last { width:110px; text-align:center; font-size:12px; color:var(--muted); }
+.vw-list-head .vw-col-first,
+.vw-list-head .vw-col-last { font-size:12px; color:var(--muted); }
+
+.vw-tag { font-size:10px; font-weight:600; padding:2px 8px; border-radius:6px; display:inline-block; }
+.va { background:#EEF2FF; color:var(--primary); } .vg { background:#F5F3FF; color:#7C3AED; } .vp { background:#FEF3C7; color:#B45309; } .vf { background:var(--bg); color:var(--muted); }
+.vw-count-badge {
+  display:inline-flex; align-items:center; justify-content:center;
+  min-width:28px; height:24px; padding:0 6px; border-radius:12px;
+  background:var(--primary-light); color:var(--primary);
+  font-size:13px; font-weight:700;
+}
+.vw-close { display:block; margin:0 auto; }
+
+@media (max-width:767px) {
+  .vw-stats { grid-template-columns:repeat(2,1fr); }
+  .vw-stat-num { font-size:20px; }
+  .vw-col-first, .vw-col-last { display:none; }
+  .vw-list-head .vw-col-first,
+  .vw-list-head .vw-col-last { display:none; }
+  .vw-col-phone { flex:1.5; }
+  .modal { padding:20px 16px; }
+  .vw-row { padding:10px 8px; }
+  .vw-nickname { font-size:13px; }
+}
 
 @media (max-width:767px) {
   .card { padding:14px 16px; }

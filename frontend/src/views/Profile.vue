@@ -2,6 +2,21 @@
   <div class="container">
     <Loading v-if="loading" />
 
+    <template v-else-if="!auth.token">
+      <!-- 未登录状态 -->
+      <div class="guest-card">
+        <div class="guest-card-bg"></div>
+        <div class="guest-body">
+          <div class="guest-avatar">
+            <img class="guest-avatar-img" src="/logo.png" alt="logo" />
+          </div>
+          <h2 class="guest-title">AI竞界</h2>
+          <p class="guest-desc">登录后可查看个人数据、开通会员、管理战绩</p>
+          <button class="guest-login-btn" @click="$router.push('/login')">登录 / 注册</button>
+        </div>
+      </div>
+    </template>
+
     <template v-else>
       <!-- 用户头部卡片 -->
       <div class="user-card" :class="cardClass">
@@ -263,12 +278,52 @@ async function submitPwd() {
   }
 }
 
-onMounted(async () => { loading.value = true; await auth.fetchUser(); user.value = auth.user; loading.value = false })
+onMounted(async () => {
+  loading.value = true
+  if (auth.token) {
+    await auth.fetchUser()
+    user.value = auth.user
+  }
+  loading.value = false
+})
 </script>
 
 <style scoped>
 .container { min-height: 100vh; background: #f3f4f8; padding: 16px 16px 48px; }
 @media (min-width: 768px) { .container { padding: 24px 24px 48px; } }
+
+/* ===== GUEST CARD ===== */
+.guest-card {
+  position: relative; background: var(--surface); border-radius: var(--radius-lg);
+  margin-bottom: 20px; overflow: hidden; box-shadow: var(--shadow); border: 1px solid var(--border);
+}
+.guest-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, var(--primary), #8B5CF6);
+  z-index: 2;
+}
+.guest-body {
+  position: relative; z-index: 1;
+  display: flex; flex-direction: column; align-items: center;
+  padding: 36px 24px 32px; text-align: center;
+}
+.guest-avatar {
+  width: 80px; height: 80px; border-radius: 50%;
+  border: 3px solid #C7D2FE; box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 16px; overflow: hidden;
+}
+.guest-avatar-img { width: 68%; height: 68%; }
+.guest-title { font-size: 20px; font-weight: 800; color: var(--text); margin-bottom: 8px; }
+.guest-desc { font-size: 15px; color: var(--muted); line-height: 1.6; margin-bottom: 20px; }
+.guest-login-btn {
+  width: 100%; max-width: 280px; height: 48px;
+  background: linear-gradient(135deg, #6366F1, #7C3AED);
+  color: #fff; border-radius: 12px; font-size: 16px; font-weight: 700;
+  border: none; cursor: pointer; box-shadow: 0 4px 16px rgba(99,102,241,0.3);
+  transition: all 0.15s;
+}
+.guest-login-btn:active { transform: scale(0.97); }
 
 /* ===== USER CARD ===== */
 .user-card {

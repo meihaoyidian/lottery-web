@@ -112,11 +112,8 @@
       </div>
     </div>
 
-    <!-- 预告条 -->
-    <div v-if="isAnalysisPending && isFirst" class="mc-pending-bar">
-      <span>模型数据实时更新中 · 预计晚7点同步更新</span>
-    </div>
-    <div v-else-if="isAnalysisPending && !isFirst" class="mc-pending-hint">
+    <!-- 预告条：数据未填，卡片内轻量提示 -->
+    <div v-if="isAnalysisPending" class="mc-pending-hint">
       <span>模型数据实时更新中</span>
     </div>
 
