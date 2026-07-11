@@ -162,7 +162,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onActivated } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import api from '../api'
@@ -288,6 +288,16 @@ watch(() => auth.token, async () => {
     user.value = null
   }
   loading.value = false
+})
+
+// keep-alive 激活时刷新
+onActivated(async () => {
+  if (auth.token) {
+    loading.value = true
+    await auth.fetchUser()
+    user.value = auth.user
+    loading.value = false
+  }
 })
 
 onMounted(async () => {

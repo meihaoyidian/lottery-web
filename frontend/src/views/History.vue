@@ -72,7 +72,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onActivated } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import api from '../api'
 import UpgradeGuide from '../components/UpgradeGuide.vue'
@@ -133,6 +133,9 @@ async function loadMoreHistory() {
 }
 
 watch(() => auth.token, () => { historyList.value=[]; hasMoreHistory.value=false; pageNum.value=1; loadData() })
+
+// keep-alive 激活时刷新数据
+onActivated(() => { loadData() })
 
 onMounted(loadData)
 </script>

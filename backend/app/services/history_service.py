@@ -49,9 +49,10 @@ class HistoryService:
         Returns:
             包含推荐列表和分页信息的字典
         """
-        # 构建查询：有实际结果的推荐即为历史数据
+        # 构建查询（默认显示全部历史数据）
         query = db.query(Recommendation).filter(
-            Recommendation.actual_outcome.isnot(None)
+            Recommendation.status == RecommendationStatus.COMPLETED,
+            Recommendation.archived_at.isnot(None)
         )
 
         # 添加过滤条件
@@ -86,13 +87,13 @@ class HistoryService:
             query = query.filter(Recommendation.created_at <= end_date)
 
         # 按更新时间降序排列
-        query = query.order_by(Recommendation.updated_at.desc())
+        query = query.order_by(Recommendation.archived_at.desc())
 
         # 非付费用户：只展示命中率高的推荐（actual_outcome.hit_status='hit'）
         if not is_paid_user:
             rec_ids = HistoryService.get_highlight_ids(db, limit=10)
             if rec_ids:
-                items = query.filter(Recommendation.id.in_(rec_ids)).order_by(Recommendation.updated_at.desc()).all()
+                items = query.filter(Recommendation.id.in_(rec_ids)).order_by(Recommendation.archived_at.desc()).all()
             else:
                 items = []
 
@@ -210,7 +211,8 @@ class HistoryService:
         """
         # 构建查询：有实际结果的推荐
         query = db.query(Recommendation).filter(
-            Recommendation.actual_outcome.isnot(None)
+            Recommendation.status == RecommendationStatus.COMPLETED,
+            Recommendation.archived_at.isnot(None)
         )
 
         # 添加过滤条件
@@ -493,11 +495,10 @@ class HistoryService:
 
             recommendation.prediction_data = prediction_data
 
-        # 标结果：保持 ACTIVE 以便今日赛事页展示，仅记录 actual_outcome
+        # 更新状态和结果，设置归档时间
+        recommendation.status = RecommendationStatus.COMPLETED
         recommendation.actual_outcome = actual_outcome
-        # 如果之前未归档，保持 ACTIVE；如需归档由管理员手动删除
-        if recommendation.status != RecommendationStatus.INACTIVE:
-            recommendation.status = RecommendationStatus.ACTIVE
+        recommendation.archived_at = datetime.utcnow()
 
         db.commit()
         db.refresh(recommendation)
@@ -521,7 +522,8 @@ class HistoryService:
         """
         return db.query(Recommendation).filter(
             Recommendation.id == recommendation_id,
-            Recommendation.actual_outcome.isnot(None)
+            Recommendation.status == RecommendationStatus.COMPLETED,
+            Recommendation.archived_at.isnot(None)
         ).first()
 
     @staticmethod
@@ -546,7 +548,8 @@ class HistoryService:
 
         # 构建查询：有实际结果的推荐
         query = db.query(Recommendation).filter(
-            Recommendation.actual_outcome.isnot(None)
+            Recommendation.status == RecommendationStatus.COMPLETED,
+            Recommendation.archived_at.isnot(None)
         )
 
         # 添加预测类型过滤
@@ -647,8 +650,9 @@ class HistoryService:
 
         while len(ids) < limit:
             batch = db.query(Recommendation).filter(
-                Recommendation.actual_outcome.isnot(None)
-            ).order_by(Recommendation.updated_at.desc()).offset(offset).limit(BATCH_SIZE).all()
+                Recommendation.status == RecommendationStatus.COMPLETED,
+            Recommendation.archived_at.isnot(None)
+            ).order_by(Recommendation.archived_at.desc()).offset(offset).limit(BATCH_SIZE).all()
 
             if not batch:
                 break

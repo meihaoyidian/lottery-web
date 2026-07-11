@@ -195,7 +195,7 @@ async function submitResult() {
     const ao = { hit_status:rf.hitStatus, notes:rf.notes||null, is_highlight:false }
     if(rf.hitStatus==='partial'&&rf.partialDetail) ao.partial_detail=rf.partialDetail
     await api.markResult(rf.id, { actual_outcome: ao })
-    showResult.value=false; page.value=1; recs.value=[]; loadRecs()
+    showResult.value=false; page.value=1; recs.value=[]; await loadRecs()
   }catch(e){ alert(e.message) }finally{ submitting.value=false }
 }
 

@@ -126,7 +126,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, computed, watch, onMounted, onUnmounted, onActivated } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import api from '../api'
@@ -329,6 +329,11 @@ watch(() => auth.token, () => {
   recommendations.value = []
   loadRecommendations()
   loadScheduleStatus()
+})
+
+// keep-alive 激活时刷新 banner 数据（战绩编辑完切回来等场景）
+onActivated(() => {
+  refreshBannerData()
 })
 
 onMounted(async () => {

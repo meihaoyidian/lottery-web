@@ -258,7 +258,7 @@ async def get_highlights(
     if not rec_ids:
         return {"highlights": []}
 
-    recs = db.query(Recommendation).filter(Recommendation.id.in_(rec_ids)).order_by(Recommendation.updated_at.desc()).all()
+    recs = db.query(Recommendation).filter(Recommendation.id.in_(rec_ids)).order_by(Recommendation.archived_at.desc()).all()
 
     highlights = []
     for rec in recs:

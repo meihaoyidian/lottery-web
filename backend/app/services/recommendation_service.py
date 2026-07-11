@@ -39,9 +39,12 @@ class RecommendationService:
         page_size = min(page_size, 50)
         offset = (page - 1) * page_size
 
-        # 基础查询：活跃推荐（含已标结果但未归档的）
+        # 基础查询：状态为active且未归档
         query = db.query(Recommendation).filter(
-            Recommendation.status == RecommendationStatus.ACTIVE
+            and_(
+                Recommendation.status == RecommendationStatus.ACTIVE,
+                Recommendation.archived_at.is_(None)
+            )
         )
 
         # 预测类型过滤
